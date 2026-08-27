@@ -66,3 +66,20 @@ export function useProductionDate(date: string) {
     enabled: Boolean(date),
   });
 }
+
+export function useProductionEntry(idOrDate?: string) {
+  return useQuery({
+    queryKey: ['production', idOrDate],
+    queryFn: async (): Promise<EggProduction | null> => {
+      if (!idOrDate) return null;
+      try {
+        const res = await api.get<{ data: EggProduction }>(`/production/${idOrDate}`);
+        return res.data.data;
+      } catch (err: any) {
+        if (err?.code === 'NOT_FOUND') return null;
+        throw err;
+      }
+    },
+    enabled: Boolean(idOrDate),
+  });
+}

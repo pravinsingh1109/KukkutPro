@@ -4,7 +4,7 @@ import { useProduction } from '../../hooks/useProduction';
 import { useInventoryStock } from '../../hooks/useInventory';
 import { TopAppBar } from '../../components/shared/FAB';
 import { formatEggBreakdown } from '../../lib/utils';
-import { Egg, Plus, ShoppingCart, Calendar, Edit2 } from 'lucide-react';
+import { Egg, Plus, ShoppingCart, Calendar, Edit2, ChevronRight } from 'lucide-react';
 
 export const DailyEntry: React.FC = () => {
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ export const DailyEntry: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => navigate('/production/new')}
+                onClick={() => navigate(`/production/edit/${todayProduction.id}`)}
                 className="w-full h-11 bg-white border border-brand-500 text-brand-500 hover:bg-brand-50 rounded-md font-semibold text-body flex items-center justify-center gap-2 transition-all"
               >
                 <Edit2 size={16} /> Edit Production Entry
@@ -117,7 +117,10 @@ export const DailyEntry: React.FC = () => {
 
         {/* Production History List */}
         <div>
-          <h3 className="text-heading-3 font-bold text-neutral-900 mb-2 px-1">Recent Daily Production</h3>
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h3 className="text-heading-3 font-bold text-neutral-900">Recent Daily Production</h3>
+            <span className="text-[11px] text-neutral-400">Tap to edit</span>
+          </div>
           <div className="bg-white rounded-md shadow-sm border border-neutral-100 divide-y divide-neutral-100 overflow-hidden">
             {isLoading ? (
               <p className="p-4 text-center text-caption text-neutral-400">Loading entries...</p>
@@ -125,22 +128,29 @@ export const DailyEntry: React.FC = () => {
               <p className="p-6 text-center text-body text-neutral-500">No entries recorded yet.</p>
             ) : (
               productions.slice(0, 7).map((p) => (
-                <div key={p.id} className="p-3.5 flex items-center justify-between">
+                <div
+                  key={p.id}
+                  onClick={() => navigate(`/production/edit/${p.id}`)}
+                  className="p-3.5 flex items-center justify-between hover:bg-neutral-50 active:bg-neutral-100 cursor-pointer transition-colors"
+                >
                   <div>
                     <span className="text-body font-semibold text-neutral-900 block">{p.date}</span>
                     <span className="text-caption text-neutral-500">
                       {formatEggBreakdown(p.eggsProduced)}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-body font-bold text-neutral-900 tabular-nums block">
-                      {p.eggsProduced.toLocaleString('en-IN')} eggs
-                    </span>
-                    {p.brokenEggs > 0 && (
-                      <span className="text-[11px] text-danger-500 block">
-                        {p.brokenEggs} broken
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <span className="text-body font-bold text-neutral-900 tabular-nums block">
+                        {p.eggsProduced.toLocaleString('en-IN')} eggs
                       </span>
-                    )}
+                      {p.brokenEggs > 0 && (
+                        <span className="text-[11px] text-danger-500 block">
+                          {p.brokenEggs} broken
+                        </span>
+                      )}
+                    </div>
+                    <ChevronRight size={16} className="text-neutral-400 shrink-0" />
                   </div>
                 </div>
               ))

@@ -25,6 +25,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/daily" element={<DailyEntry />} />
       <Route path="/production/new" element={<ProductionForm />} />
+      <Route path="/production/edit/:id" element={<ProductionForm />} />
       <Route path="/sales" element={<SalesList />} />
       <Route path="/sales/new" element={<SaleForm />} />
       <Route path="/sales/:id" element={<SaleDetail />} />

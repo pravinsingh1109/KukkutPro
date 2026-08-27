@@ -156,6 +156,33 @@ export class ProductionService {
     };
   }
 
+  async getProductionById(id: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
+
+    const production = await prisma.eggProduction.findUnique({
+      where: { id },
+    });
+
+    if (!production || production.farmId !== farm.id) {
+      throw new AppError('No production entry found with specified ID', 404, 'NOT_FOUND');
+    }
+
+    const dateStr = production.date.toISOString().split('T')[0];
+    const stock = await inventoryService.getStock(farm.id, dateStr);
+
+    return {
+      id: production.id,
+      date: dateStr,
+      eggsProduced: production.eggsProduced,
+      brokenEggs: production.brokenEggs,
+      notes: production.notes,
+      closingStock: stock.closingStock,
+      display: stock.display,
+    };
+  }
+
   async updateProduction(id: string, input: UpdateProductionInput, farmId?: string) {
     const farm = farmId
       ? await settingsService.getOrCreateFarm(farmId)
