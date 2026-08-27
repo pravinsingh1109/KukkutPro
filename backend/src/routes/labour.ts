@@ -24,16 +24,16 @@ const labourPaymentSchema = z.object({
 
 router.post('/', validateBody(createLabourerSchema), async (req, res, next) => {
   try {
-    const data = await labourService.createLabourer(req.body);
+    const data = await labourService.createLabourer(req.body, req.farmId);
     res.status(201).json({ data, message: 'Labourer added successfully' });
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/', async (_req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const data = await labourService.getLabourers();
+    const data = await labourService.getLabourers(req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -42,7 +42,7 @@ router.get('/', async (_req, res, next) => {
 
 router.get('/:id', async (req, res, next) => {
   try {
-    const data = await labourService.getLabourerById(req.params.id);
+    const data = await labourService.getLabourerById(req.params.id, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -51,7 +51,7 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/:id/payments', validateBody(labourPaymentSchema), async (req, res, next) => {
   try {
-    const data = await labourService.recordPayment(req.params.id, req.body);
+    const data = await labourService.recordPayment(req.params.id, req.body, req.farmId);
     res.status(201).json({ data, message: 'Labour payment recorded' });
   } catch (error) {
     next(error);

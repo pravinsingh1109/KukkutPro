@@ -45,6 +45,7 @@ model Farm {
   openingCash     Decimal           @default(0) @db.Decimal(12, 2)
   petiSize        Int               @default(210)
   isSetupComplete Boolean           @default(false)
+  isDemo          Boolean           @default(false)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   productions     EggProduction[]
@@ -56,6 +57,8 @@ model Farm {
   labourPayments  LabourPayment[]
   expenses        Expense[]
   expenseCategories ExpenseCategory[]
+
+  @@index([isDemo])
 }
 
 model EggProduction {

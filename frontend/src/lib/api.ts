@@ -11,6 +11,14 @@ export const api = axios.create({
   timeout: 10000,
 });
 
+api.interceptors.request.use((config) => {
+  const isDemo = localStorage.getItem('kukkutpro_demo_mode') === 'true';
+  if (isDemo) {
+    config.headers['x-demo-mode'] = 'true';
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {

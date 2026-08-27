@@ -17,7 +17,7 @@ const createExpenseSchema = z.object({
 
 router.post('/', validateBody(createExpenseSchema), async (req, res, next) => {
   try {
-    const data = await expenseService.createExpense(req.body);
+    const data = await expenseService.createExpense(req.body, req.farmId);
     res.status(201).json({ data, message: 'Expense recorded successfully' });
   } catch (error) {
     next(error);
@@ -30,7 +30,7 @@ router.get('/', async (req, res, next) => {
     const to = req.query.to as string | undefined;
     const category = req.query.category as string | undefined;
 
-    const data = await expenseService.getExpenses({ from, to, category });
+    const data = await expenseService.getExpenses({ from, to, category }, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);

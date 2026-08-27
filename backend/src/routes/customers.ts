@@ -28,7 +28,7 @@ const paymentSchema = z.object({
 
 router.post('/', validateBody(createCustomerSchema), async (req, res, next) => {
   try {
-    const data = await customerService.createCustomer(req.body);
+    const data = await customerService.createCustomer(req.body, req.farmId);
     res.status(201).json({ data, message: 'Customer created successfully' });
   } catch (error) {
     next(error);
@@ -39,7 +39,7 @@ router.get('/', async (req, res, next) => {
   try {
     const hasDues = req.query.hasDues === 'true';
     const search = req.query.search as string | undefined;
-    const data = await customerService.getCustomers({ hasDues, search });
+    const data = await customerService.getCustomers({ hasDues, search }, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -48,7 +48,7 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:id', async (req, res, next) => {
   try {
-    const data = await customerService.getCustomerById(req.params.id);
+    const data = await customerService.getCustomerById(req.params.id, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -75,7 +75,7 @@ router.delete('/:id', async (req, res, next) => {
 
 router.post('/:id/payments', validateBody(paymentSchema), async (req, res, next) => {
   try {
-    const data = await customerService.recordPayment(req.params.id, req.body);
+    const data = await customerService.recordPayment(req.params.id, req.body, req.farmId);
     res.status(201).json({ data, message: 'Payment recorded successfully' });
   } catch (error) {
     next(error);

@@ -16,8 +16,10 @@ export interface CreateSaleInput {
 }
 
 export class SalesService {
-  async createSale(input: CreateSaleInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async createSale(input: CreateSaleInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const customer = await prisma.customer.findUnique({
       where: { id: input.customerId },
     });
@@ -133,8 +135,13 @@ export class SalesService {
     };
   }
 
-  async getSales(options?: { customerId?: string; from?: string; to?: string; status?: SaleStatus }) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getSales(
+    options?: { customerId?: string; from?: string; to?: string; status?: SaleStatus },
+    farmId?: string
+  ) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
 
     const whereClause: Prisma.SaleWhereInput = {
       farmId: farm.id,
@@ -176,8 +183,10 @@ export class SalesService {
     }));
   }
 
-  async getSaleById(id: string) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getSaleById(id: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const sale = await prisma.sale.findUnique({
       where: { id },
       include: {
@@ -209,8 +218,10 @@ export class SalesService {
     };
   }
 
-  async voidSale(id: string, reason: string) {
-    const farm = await settingsService.getOrCreateFarm();
+  async voidSale(id: string, reason: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const sale = await prisma.sale.findUnique({
       where: { id },
       include: { customer: true },

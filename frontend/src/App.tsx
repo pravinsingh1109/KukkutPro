@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './routes';
 import { BottomNav } from './components/shared/BottomNav';
 
+import { DemoModeBanner } from './components/shared/DemoModeBanner';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -19,8 +21,11 @@ const AppShell: React.FC = () => {
   const hideNav = location.pathname === '/setup';
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      <AppRoutes />
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col">
+      <DemoModeBanner />
+      <div className="flex-1">
+        <AppRoutes />
+      </div>
       {!hideNav && <BottomNav />}
     </div>
   );

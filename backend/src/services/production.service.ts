@@ -17,8 +17,10 @@ export interface UpdateProductionInput {
 }
 
 export class ProductionService {
-  async createProduction(input: CreateProductionInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async createProduction(input: CreateProductionInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const broken = input.brokenEggs || 0;
 
     if (broken > input.eggsProduced) {
@@ -83,8 +85,10 @@ export class ProductionService {
     };
   }
 
-  async getProductionList(fromStr?: string, toStr?: string) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getProductionList(fromStr?: string, toStr?: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const toDate = toStr ? new Date(`${toStr}T23:59:59.999Z`) : new Date();
     const fromDate = fromStr
       ? new Date(`${fromStr}T00:00:00.000Z`)
@@ -120,8 +124,10 @@ export class ProductionService {
     return results;
   }
 
-  async getProductionByDate(dateStr: string) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getProductionByDate(dateStr: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
 
     const production = await prisma.eggProduction.findUnique({
@@ -150,8 +156,10 @@ export class ProductionService {
     };
   }
 
-  async updateProduction(id: string, input: UpdateProductionInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async updateProduction(id: string, input: UpdateProductionInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const existing = await prisma.eggProduction.findUnique({ where: { id } });
 
     if (!existing || existing.farmId !== farm.id) {

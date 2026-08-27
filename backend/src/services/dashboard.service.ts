@@ -7,8 +7,10 @@ import { labourService } from './labour.service';
 import { settingsService } from './settings.service';
 
 export class DashboardService {
-  async getTodayDashboard(dateStr?: string) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getTodayDashboard(dateStr?: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const todayStr = dateStr || new Date().toISOString().split('T')[0];
     const todayDate = new Date(`${todayStr}T00:00:00.000Z`);
 

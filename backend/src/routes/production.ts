@@ -20,7 +20,7 @@ const updateProductionSchema = z.object({
 
 router.post('/', validateBody(createProductionSchema), async (req, res, next) => {
   try {
-    const data = await productionService.createProduction(req.body);
+    const data = await productionService.createProduction(req.body, req.farmId);
     res.status(201).json({ data, message: 'Production recorded successfully' });
   } catch (error) {
     next(error);
@@ -31,7 +31,7 @@ router.get('/', async (req, res, next) => {
   try {
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
-    const data = await productionService.getProductionList(from, to);
+    const data = await productionService.getProductionList(from, to, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -40,7 +40,7 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:date', async (req, res, next) => {
   try {
-    const data = await productionService.getProductionByDate(req.params.date);
+    const data = await productionService.getProductionByDate(req.params.date, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -49,7 +49,7 @@ router.get('/:date', async (req, res, next) => {
 
 router.patch('/:id', validateBody(updateProductionSchema), async (req, res, next) => {
   try {
-    const data = await productionService.updateProduction(req.params.id, req.body);
+    const data = await productionService.updateProduction(req.params.id, req.body, req.farmId);
     res.json({ data, message: 'Production updated successfully' });
   } catch (error) {
     next(error);

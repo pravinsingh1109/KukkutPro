@@ -3,8 +3,47 @@ import { Prisma } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
 
 export class SettingsService {
-  async getOrCreateFarm() {
+  async getOrCreateFarm(requestedFarmId?: string, isDemoRequested?: boolean) {
+    if (requestedFarmId) {
+      const found = await prisma.farm.findUnique({
+        where: { id: requestedFarmId },
+        include: {
+          expenseCategories: { where: { isActive: true } },
+        },
+      });
+      if (found) return found;
+    }
+
+    if (isDemoRequested) {
+      let demoFarm = await prisma.farm.findFirst({
+        where: { isDemo: true },
+        include: {
+          expenseCategories: { where: { isActive: true } },
+        },
+      });
+
+      if (!demoFarm) {
+        demoFarm = await prisma.farm.create({
+          data: {
+            name: 'KukkutPro Demo Farm (Ramesh Poultry)',
+            openingEggStock: 600,
+            openingCash: new Prisma.Decimal(12000.0),
+            petiSize: 210,
+            isSetupComplete: true,
+            isDemo: true,
+          },
+          include: {
+            expenseCategories: { where: { isActive: true } },
+          },
+        });
+      }
+
+      return demoFarm;
+    }
+
+    // Default: Real farm (isDemo: false)
     let farm = await prisma.farm.findFirst({
+      where: { isDemo: false },
       include: {
         expenseCategories: {
           where: { isActive: true },
@@ -17,9 +56,10 @@ export class SettingsService {
         data: {
           name: 'My Poultry Farm',
           openingEggStock: 0,
-          openingCash: 0,
+          openingCash: new Prisma.Decimal(0),
           petiSize: 210,
           isSetupComplete: false,
+          isDemo: false,
         },
         include: {
           expenseCategories: true,
@@ -30,8 +70,8 @@ export class SettingsService {
     return farm;
   }
 
-  async getSettings() {
-    const farm = await this.getOrCreateFarm();
+  async getSettings(farmId?: string, isDemo?: boolean) {
+    const farm = await this.getOrCreateFarm(farmId, isDemo);
     return {
       id: farm.id,
       name: farm.name,
@@ -39,12 +79,13 @@ export class SettingsService {
       openingCash: farm.openingCash.toFixed(2),
       petiSize: farm.petiSize,
       isSetupComplete: farm.isSetupComplete,
+      isDemo: farm.isDemo,
       expenseCategories: farm.expenseCategories.map((c) => c.name),
     };
   }
 
-  async updateSettings(data: { name?: string; petiSize?: number }) {
-    const farm = await this.getOrCreateFarm();
+  async updateSettings(data: { name?: string; petiSize?: number }, farmId?: string, isDemo?: boolean) {
+    const farm = await this.getOrCreateFarm(farmId, isDemo);
     const updated = await prisma.farm.update({
       where: { id: farm.id },
       data: {
@@ -63,12 +104,17 @@ export class SettingsService {
       openingCash: updated.openingCash.toFixed(2),
       petiSize: updated.petiSize,
       isSetupComplete: updated.isSetupComplete,
+      isDemo: updated.isDemo,
       expenseCategories: updated.expenseCategories.map((c) => c.name),
     };
   }
 
-  async completeSetup(data: { name: string; openingEggStock: number; openingCash: string | number }) {
-    const farm = await this.getOrCreateFarm();
+  async completeSetup(
+    data: { name: string; openingEggStock: number; openingCash: string | number },
+    farmId?: string,
+    isDemo?: boolean
+  ) {
+    const farm = await this.getOrCreateFarm(farmId, isDemo);
     const openingCashDecimal = new Prisma.Decimal(data.openingCash.toString());
 
     if (data.openingEggStock < 0) {
@@ -95,19 +141,20 @@ export class SettingsService {
       openingEggStock: updated.openingEggStock,
       openingCash: updated.openingCash.toFixed(2),
       isSetupComplete: updated.isSetupComplete,
+      isDemo: updated.isDemo,
     };
   }
 
-  async getCategories() {
-    const farm = await this.getOrCreateFarm();
+  async getCategories(farmId?: string, isDemo?: boolean) {
+    const farm = await this.getOrCreateFarm(farmId, isDemo);
     return prisma.expenseCategory.findMany({
       where: { farmId: farm.id, isActive: true },
       orderBy: { name: 'asc' },
     });
   }
 
-  async addCategory(name: string) {
-    const farm = await this.getOrCreateFarm();
+  async addCategory(name: string, farmId?: string, isDemo?: boolean) {
+    const farm = await this.getOrCreateFarm(farmId, isDemo);
     const trimmed = name.trim();
     if (!trimmed) {
       throw new AppError('Category name cannot be empty', 400, 'VALIDATION_ERROR', 'name');

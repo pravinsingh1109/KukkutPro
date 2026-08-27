@@ -6,7 +6,7 @@ const router = Router();
 router.get('/today', async (req, res, next) => {
   try {
     const date = req.query.date as string | undefined;
-    const data = await dashboardService.getTodayDashboard(date);
+    const data = await dashboardService.getTodayDashboard(date, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);

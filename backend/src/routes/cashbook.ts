@@ -16,10 +16,9 @@ const manualCashEntrySchema = z.object({
 
 router.get('/', async (req, res, next) => {
   try {
-    const farm = await settingsService.getOrCreateFarm();
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
-    const data = await cashbookService.getEntries(farm.id, from, to);
+    const data = await cashbookService.getEntries(req.farmId, from, to);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -28,9 +27,8 @@ router.get('/', async (req, res, next) => {
 
 router.get('/balance', async (req, res, next) => {
   try {
-    const farm = await settingsService.getOrCreateFarm();
     const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
-    const closingBalance = await cashbookService.getBalance(farm.id, dateStr);
+    const closingBalance = await cashbookService.getBalance(req.farmId, dateStr);
     res.json({ data: { date: dateStr, closingBalance } });
   } catch (error) {
     next(error);
@@ -39,8 +37,7 @@ router.get('/balance', async (req, res, next) => {
 
 router.post('/manual', validateBody(manualCashEntrySchema), async (req, res, next) => {
   try {
-    const farm = await settingsService.getOrCreateFarm();
-    const entry = await cashbookService.postEntry(farm.id, {
+    const entry = await cashbookService.postEntry(req.farmId, {
       date: req.body.date,
       type: req.body.type as CashEntryType,
       amount: req.body.amount,

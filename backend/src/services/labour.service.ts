@@ -45,19 +45,21 @@ export class LabourService {
     return salaryAmount.mul(months);
   }
 
-  async createLabourer(input: CreateLabourerInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async createLabourer(input: CreateLabourerInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const name = input.name.trim();
     if (!name) {
       throw new AppError('Labourer name is required', 400, 'VALIDATION_ERROR', 'name');
     }
 
     const salaryAmount = new Prisma.Decimal(input.salaryAmount.toString());
-    if (salaryAmount.lt(0)) {
-      throw new AppError('Salary amount cannot be negative', 400, 'VALIDATION_ERROR', 'salaryAmount');
+    if (salaryAmount.lte(0)) {
+      throw new AppError('Salary amount must be positive', 400, 'VALIDATION_ERROR', 'salaryAmount');
     }
 
-    const joiningDate = new Date(`${input.joiningDate}T00:00:00.000Z`);
+    const joiningDate = input.joiningDate ? new Date(`${input.joiningDate}T00:00:00.000Z`) : new Date();
 
     const labourer = await prisma.labourer.create({
       data: {
@@ -72,8 +74,6 @@ export class LabourService {
       },
     });
 
-    const accrued = this.computeAccruedSalary(labourer.salaryType, labourer.salaryAmount, labourer.joiningDate);
-
     return {
       id: labourer.id,
       name: labourer.name,
@@ -81,16 +81,16 @@ export class LabourService {
       role: labourer.role,
       salaryType: labourer.salaryType,
       salaryAmount: labourer.salaryAmount.toFixed(2),
-      joiningDate: input.joiningDate,
-      totalAccrued: accrued.toFixed(2),
-      totalPaid: '0.00',
-      outstanding: accrued.toFixed(2),
+      joiningDate: labourer.joiningDate.toISOString().split('T')[0],
+      outstanding: '0.00',
       advanceBalance: '0.00',
     };
   }
 
-  async getLabourers() {
-    const farm = await settingsService.getOrCreateFarm();
+  async getLabourers(farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const labourers = await prisma.labourer.findMany({
       where: { farmId: farm.id, isActive: true },
       include: { payments: true },
@@ -133,12 +133,16 @@ export class LabourService {
     });
   }
 
-  async getLabourerById(id: string) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getLabourerById(id: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const labourer = await prisma.labourer.findUnique({
       where: { id },
       include: {
-        payments: { orderBy: { date: 'desc' } },
+        payments: {
+          orderBy: { date: 'desc' },
+        },
       },
     });
 
@@ -183,8 +187,10 @@ export class LabourService {
     };
   }
 
-  async recordPayment(id: string, input: RecordLabourPaymentInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async recordPayment(id: string, input: RecordLabourPaymentInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const labourer = await prisma.labourer.findUnique({
       where: { id },
       include: { payments: true },

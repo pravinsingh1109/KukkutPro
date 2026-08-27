@@ -20,9 +20,9 @@ const addCategorySchema = z.object({
   name: z.string().min(1, 'Category name is required'),
 });
 
-router.get('/', async (_req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const data = await settingsService.getSettings();
+    const data = await settingsService.getSettings(req.farmId, req.isDemo);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -31,7 +31,7 @@ router.get('/', async (_req, res, next) => {
 
 router.patch('/', validateBody(updateSettingsSchema), async (req, res, next) => {
   try {
-    const data = await settingsService.updateSettings(req.body);
+    const data = await settingsService.updateSettings(req.body, req.farmId, req.isDemo);
     res.json({ data, message: 'Settings updated successfully' });
   } catch (error) {
     next(error);
@@ -40,16 +40,16 @@ router.patch('/', validateBody(updateSettingsSchema), async (req, res, next) => 
 
 router.post('/setup', validateBody(setupSchema), async (req, res, next) => {
   try {
-    const data = await settingsService.completeSetup(req.body);
+    const data = await settingsService.completeSetup(req.body, req.farmId, req.isDemo);
     res.json({ data, message: 'Farm setup completed successfully' });
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/categories', async (_req, res, next) => {
+router.get('/categories', async (req, res, next) => {
   try {
-    const data = await settingsService.getCategories();
+    const data = await settingsService.getCategories(req.farmId, req.isDemo);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -58,7 +58,7 @@ router.get('/categories', async (_req, res, next) => {
 
 router.post('/categories', validateBody(addCategorySchema), async (req, res, next) => {
   try {
-    const data = await settingsService.addCategory(req.body.name);
+    const data = await settingsService.addCategory(req.body.name, req.farmId, req.isDemo);
     res.status(201).json({ data, message: 'Category added successfully' });
   } catch (error) {
     next(error);

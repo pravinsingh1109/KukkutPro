@@ -6,9 +6,8 @@ const router = Router();
 
 router.get('/stock', async (req, res, next) => {
   try {
-    const farm = await settingsService.getOrCreateFarm();
     const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
-    const data = await inventoryService.getStock(farm.id, dateStr);
+    const data = await inventoryService.getStock(req.farmId, dateStr);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -17,10 +16,9 @@ router.get('/stock', async (req, res, next) => {
 
 router.get('/history', async (req, res, next) => {
   try {
-    const farm = await settingsService.getOrCreateFarm();
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
-    const data = await inventoryService.getHistory(farm.id, from, to);
+    const data = await inventoryService.getHistory(req.farmId, from, to);
     res.json({ data });
   } catch (error) {
     next(error);

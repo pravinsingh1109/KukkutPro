@@ -21,7 +21,7 @@ const voidSaleSchema = z.object({
 
 router.post('/', validateBody(createSaleSchema), async (req, res, next) => {
   try {
-    const data = await salesService.createSale(req.body);
+    const data = await salesService.createSale(req.body, req.farmId);
     res.status(201).json({ data, message: 'Sale recorded successfully' });
   } catch (error) {
     next(error);
@@ -35,7 +35,7 @@ router.get('/', async (req, res, next) => {
     const to = req.query.to as string | undefined;
     const status = req.query.status as SaleStatus | undefined;
 
-    const data = await salesService.getSales({ customerId, from, to, status });
+    const data = await salesService.getSales({ customerId, from, to, status }, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -44,7 +44,7 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:id', async (req, res, next) => {
   try {
-    const data = await salesService.getSaleById(req.params.id);
+    const data = await salesService.getSaleById(req.params.id, req.farmId);
     res.json({ data });
   } catch (error) {
     next(error);
@@ -53,7 +53,7 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/:id/void', validateBody(voidSaleSchema), async (req, res, next) => {
   try {
-    const data = await salesService.voidSale(req.params.id, req.body.reason);
+    const data = await salesService.voidSale(req.params.id, req.body.reason, req.farmId);
     res.json({ data, message: 'Sale voided successfully' });
   } catch (error) {
     next(error);

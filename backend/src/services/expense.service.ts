@@ -15,8 +15,10 @@ export interface CreateExpenseInput {
 }
 
 export class ExpenseService {
-  async createExpense(input: CreateExpenseInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async createExpense(input: CreateExpenseInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const category = input.category.trim();
     const description = input.description.trim();
 
@@ -30,62 +32,67 @@ export class ExpenseService {
 
     const totalAmount = new Prisma.Decimal(input.totalAmount.toString());
     if (totalAmount.lte(0)) {
-      throw new AppError('Total amount must be greater than zero', 400, 'VALIDATION_ERROR', 'totalAmount');
+      throw new AppError('Expense total amount must be positive', 400, 'VALIDATION_ERROR', 'totalAmount');
     }
 
-    const quantityDecimal = input.quantity !== undefined ? new Prisma.Decimal(input.quantity.toString()) : null;
-    const unitCostDecimal = input.unitCost !== undefined ? new Prisma.Decimal(input.unitCost.toString()) : null;
-    const expenseDate = new Date(`${input.date}T00:00:00.000Z`);
+    const date = new Date(`${input.date}T00:00:00.000Z`);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const expense = await tx.expense.create({
         data: {
           farmId: farm.id,
-          date: expenseDate,
+          date,
           category,
           description,
-          quantity: quantityDecimal,
-          unitCost: unitCostDecimal,
+          quantity: input.quantity ? new Prisma.Decimal(input.quantity.toString()) : null,
+          unitCost: input.unitCost ? new Prisma.Decimal(input.unitCost.toString()) : null,
           totalAmount,
-          notes: input.notes,
+          notes: input.notes?.trim() || null,
         },
       });
 
-      // Post to Cash Book (Cash OUT)
-      const cashEntry = await cashbookService.postEntry(
-        farm.id,
-        {
-          date: input.date,
+      const cashEntry = await tx.cashEntry.create({
+        data: {
+          farmId: farm.id,
+          date,
           type: 'OUT',
           amount: totalAmount,
           source: 'EXPENSE',
           referenceId: expense.id,
-          notes: `${category}: ${description}${input.notes ? ` (${input.notes})` : ''}`,
+          notes: `${category}: ${description}`,
+          isManual: false,
         },
-        tx
-      );
+      });
 
       await tx.expense.update({
         where: { id: expense.id },
         data: { cashEntryId: cashEntry.id },
       });
 
-      return {
-        id: expense.id,
-        date: input.date,
-        category: expense.category,
-        description: expense.description,
-        quantity: expense.quantity ? expense.quantity.toNumber() : null,
-        unitCost: expense.unitCost ? expense.unitCost.toFixed(2) : null,
-        totalAmount: expense.totalAmount.toFixed(2),
-        notes: expense.notes,
-        createdAt: expense.createdAt.toISOString(),
-      };
+      return { expense, cashEntry };
     });
+
+    return {
+      id: result.expense.id,
+      date: input.date,
+      category: result.expense.category,
+      description: result.expense.description,
+      quantity: result.expense.quantity ? Number(result.expense.quantity) : null,
+      unitCost: result.expense.unitCost ? result.expense.unitCost.toFixed(2) : null,
+      totalAmount: result.expense.totalAmount.toFixed(2),
+      notes: result.expense.notes,
+      cashEntryId: result.cashEntry.id,
+      createdAt: result.expense.createdAt.toISOString(),
+    };
   }
 
-  async getExpenses(options?: { from?: string; to?: string; category?: string }) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getExpenses(
+    options?: { category?: string; from?: string; to?: string },
+    farmId?: string
+  ) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const whereClause: Prisma.ExpenseWhereInput = {
       farmId: farm.id,
     };

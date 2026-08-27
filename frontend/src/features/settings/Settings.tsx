@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
 import { useSettings } from '../../hooks/useSettings';
+import { useDemoStore } from '../../lib/demoStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { TopAppBar } from '../../components/shared/FAB';
 import { formatCurrency } from '../../lib/utils';
 import { api } from '../../lib/api';
-import { Check, Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import {
+  Check,
+  Plus,
+  Sparkles,
+  RotateCcw,
+  ShieldAlert,
+  AlertTriangle,
+} from 'lucide-react';
 
 export const Settings: React.FC = () => {
   const { settings, updateSettings, refetch } = useSettings();
+  const { isDemoMode, setDemoMode } = useDemoStore();
+  const queryClient = useQueryClient();
 
   const [farmName, setFarmName] = useState(settings?.name || '');
   const [petiSize, setPetiSize] = useState<number>(settings?.petiSize || 210);
   const [newCategory, setNewCategory] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   // Sync state if settings resolve
   React.useEffect(() => {
@@ -52,6 +67,27 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const handleToggleDemo = async () => {
+    const nextMode = !isDemoMode;
+    setDemoMode(nextMode);
+    await queryClient.invalidateQueries();
+  };
+
+  const handleResetDemo = async () => {
+    setIsResetting(true);
+    try {
+      await api.post('/demo/reset');
+      await queryClient.invalidateQueries();
+      setIsResetModalOpen(false);
+      setResetSuccess(true);
+      setTimeout(() => setResetSuccess(false), 4000);
+    } catch (err: any) {
+      alert(err?.error || 'Failed to reset demo data');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 pb-24 max-w-md mx-auto">
       <TopAppBar title="Settings" subtitle="Farm profile and unit configurations" />
@@ -63,11 +99,63 @@ export const Settings: React.FC = () => {
           </div>
         )}
 
+        {resetSuccess && (
+          <div className="p-3 bg-amber-100 border border-amber-500/30 text-amber-900 rounded-md text-body-sm font-semibold flex items-center gap-1.5">
+            <Check size={18} className="text-amber-700" /> Demo farm re-seeded with realistic data!
+          </div>
+        )}
+
         {error && (
           <div className="p-3 bg-danger-100 text-danger-500 rounded-md text-body-sm">
             {error}
           </div>
         )}
+
+        {/* Demo Mode Management Card */}
+        <div className="bg-white rounded-md p-4 shadow-sm border border-amber-200 bg-linear-to-b from-amber-50/40 to-white space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center">
+                <Sparkles size={16} />
+              </div>
+              <div>
+                <h3 className="text-heading-3 font-bold text-neutral-900">Demo Farm Mode</h3>
+                <span className="text-caption text-neutral-500 block">
+                  {isDemoMode ? 'Active: Ramesh Poultry Farm' : 'Inactive: Using real farm'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleToggleDemo}
+              className={`px-3 py-1.5 rounded text-caption font-bold shadow-xs transition-all ${
+                isDemoMode
+                  ? 'bg-neutral-800 text-white hover:bg-neutral-900'
+                  : 'bg-amber-600 text-white hover:bg-amber-700'
+              }`}
+            >
+              {isDemoMode ? 'Exit Demo' : 'Turn On Demo'}
+            </button>
+          </div>
+
+          <p className="text-caption text-neutral-600 leading-relaxed">
+            Experience KukkutPro with 7 days of realistic egg collection, buyer ledger dues, labour salaries, and cash books. Demo records are completely isolated from your real farm.
+          </p>
+
+          {isDemoMode && (
+            <div className="pt-2 border-t border-neutral-100 flex justify-between items-center">
+              <span className="text-caption text-neutral-600 font-medium">Re-seed sample records:</span>
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(true)}
+                className="px-2.5 py-1 text-caption font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 rounded flex items-center gap-1 transition-colors"
+              >
+                <RotateCcw size={13} /> Reset Demo Data
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* General Farm Settings Form */}
         <form onSubmit={handleSaveSettings} className="bg-white rounded-md p-4 shadow-sm border border-neutral-100 space-y-3">
@@ -163,6 +251,64 @@ export const Settings: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-lg p-5 max-w-sm w-full shadow-xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-amber-600 mb-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <ShieldAlert size={22} />
+              </div>
+              <div>
+                <h3 className="text-heading-3 font-bold text-neutral-900">Reset Demo Farm Data?</h3>
+                <span className="text-caption text-neutral-500">Completely isolated reset</span>
+              </div>
+            </div>
+
+            <p className="text-body-sm text-neutral-600 mb-4 leading-relaxed">
+              This will re-seed all sample egg collection records, buyer sales, customer dues,
+              labour payouts, and cash book reconciliations for the demo farm.
+            </p>
+
+            <div className="p-3 bg-neutral-100 rounded-md text-caption text-neutral-700 mb-4 flex items-center gap-2">
+              <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+              <span>
+                <strong>Your real farm data</strong> is strictly isolated and will <strong>not</strong> be affected.
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={() => setIsResetModalOpen(false)}
+                className="w-1/2 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold rounded-md text-body-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={handleResetDemo}
+                className="w-1/2 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-semibold rounded-md text-body-sm transition-all shadow-sm flex items-center justify-center gap-1.5"
+              >
+                {isResetting ? (
+                  <>
+                    <RotateCcw size={14} className="animate-spin" />
+                    <span>Resetting...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw size={14} />
+                    <span>Yes, Reset</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

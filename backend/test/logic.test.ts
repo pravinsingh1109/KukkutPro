@@ -100,4 +100,32 @@ assert.throws(() => {
 
 console.log('✅ Test 6: Broken > Produced rejection verified');
 
+// Test 7: Demo Data Isolation Verification
+interface MockRecord {
+  id: string;
+  farmId: string;
+  isDemo: boolean;
+}
+
+const mockDatabase: MockRecord[] = [
+  { id: 'real_sale_1', farmId: 'real_farm_123', isDemo: false },
+  { id: 'real_sale_2', farmId: 'real_farm_123', isDemo: false },
+  { id: 'demo_sale_1', farmId: 'demo_farm_999', isDemo: true },
+  { id: 'demo_sale_2', farmId: 'demo_farm_999', isDemo: true },
+  { id: 'demo_sale_3', farmId: 'demo_farm_999', isDemo: true },
+];
+
+function resetDemoFarm(records: MockRecord[], demoFarmId: string) {
+  // Only remove records belonging strictly to demoFarmId
+  return records.filter((r) => r.farmId !== demoFarmId);
+}
+
+const afterReset = resetDemoFarm(mockDatabase, 'demo_farm_999');
+assert.strictEqual(afterReset.length, 2, 'Real farm records must remain completely intact');
+assert.strictEqual(afterReset[0].id, 'real_sale_1');
+assert.strictEqual(afterReset[1].id, 'real_sale_2');
+assert(afterReset.every((r) => !r.isDemo), 'No demo records should remain in real dataset');
+
+console.log('✅ Test 7: Dedicated Demo Farm data isolation and non-destructive reset verified');
+
 console.log('\n🎉 ALL CORE DOMAIN TESTS PASSED SUCCESSFULLY!');

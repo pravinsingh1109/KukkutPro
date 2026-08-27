@@ -19,8 +19,10 @@ export interface RecordCustomerPaymentInput {
 }
 
 export class CustomerService {
-  async createCustomer(input: CreateCustomerInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async createCustomer(input: CreateCustomerInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const name = input.name.trim();
     if (!name) {
       throw new AppError('Customer name is required', 400, 'VALIDATION_ERROR', 'name');
@@ -50,8 +52,10 @@ export class CustomerService {
     };
   }
 
-  async getCustomers(options?: { hasDues?: boolean; search?: string }) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getCustomers(options?: { hasDues?: boolean; search?: string }, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
 
     const whereClause: Prisma.CustomerWhereInput = {
       farmId: farm.id,
@@ -136,8 +140,10 @@ export class CustomerService {
     });
   }
 
-  async getCustomerById(id: string) {
-    const farm = await settingsService.getOrCreateFarm();
+  async getCustomerById(id: string, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const customer = await prisma.customer.findUnique({
       where: { id },
       include: {
@@ -203,8 +209,10 @@ export class CustomerService {
     };
   }
 
-  async recordPayment(customerId: string, input: RecordCustomerPaymentInput) {
-    const farm = await settingsService.getOrCreateFarm();
+  async recordPayment(customerId: string, input: RecordCustomerPaymentInput, farmId?: string) {
+    const farm = farmId
+      ? await settingsService.getOrCreateFarm(farmId)
+      : await settingsService.getOrCreateFarm();
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
       include: {
