@@ -5,6 +5,7 @@ import { useCustomers } from '../../hooks/useCustomers';
 import { useInventoryStock } from '../../hooks/useInventory';
 import { useSettings } from '../../hooks/useSettings';
 import { CustomerQuickAddSheet } from '../customers/CustomerQuickAddSheet';
+import { CustomerSearchSelect } from '../../components/shared/CustomerSearchSelect';
 import { TopAppBar } from '../../components/shared/FAB';
 import { PETI_SIZE, TRAY_SIZE } from '../../lib/constants';
 import { formatCurrency, formatEggBreakdown } from '../../lib/utils';
@@ -19,13 +20,13 @@ export const SaleForm: React.FC = () => {
   const [customerId, setCustomerId] = useState('');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
-  // Quantity input mode: 'EGGS' | 'TRAYS' | 'PETI'
-  const [qtyMode, setQtyMode] = useState<'EGGS' | 'TRAYS' | 'PETI'>('PETI');
+  // Quantity input mode: default to 'TRAYS' per user request
+  const [qtyMode, setQtyMode] = useState<'EGGS' | 'TRAYS' | 'PETI'>('TRAYS');
   const [enteredQty, setEnteredQty] = useState<number | ''>('');
 
-  // Price mode: 'PER_EGG' | 'PER_TRAY' | 'PER_PETI'
-  const [priceMode, setPriceMode] = useState<'PER_EGG' | 'PER_TRAY' | 'PER_PETI'>('PER_PETI');
-  const [enteredPrice, setEnteredPrice] = useState<string>('285');
+  // Price mode: default to 'PER_TRAY' (e.g. ₹165/tray)
+  const [priceMode, setPriceMode] = useState<'PER_EGG' | 'PER_TRAY' | 'PER_PETI'>('PER_TRAY');
+  const [enteredPrice, setEnteredPrice] = useState<string>('165');
 
   const [amountReceived, setAmountReceived] = useState<string>('0');
   const [notes, setNotes] = useState('');
@@ -140,34 +141,14 @@ export const SaleForm: React.FC = () => {
             />
           </div>
 
-          {/* Customer Selection */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-label text-neutral-700 font-medium">
-                Customer <span className="text-danger-500">*</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsQuickAddOpen(true)}
-                className="text-body-sm text-brand-500 font-semibold flex items-center gap-1 hover:text-brand-600"
-              >
-                <Plus size={16} /> Add New
-              </button>
-            </div>
-            <select
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              className="w-full h-12 px-3 rounded-md border border-neutral-300 bg-neutral-100 text-body-lg focus:border-brand-500 focus:bg-white outline-none"
-              required
-            >
-              <option value="">Select a customer...</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.phone ? `(${c.phone})` : ''} {parseFloat(c.outstanding) > 0 ? `· Due: ₹${c.outstanding}` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Customer Selection with Live Search */}
+          <CustomerSearchSelect
+            customers={customers}
+            selectedCustomerId={customerId}
+            onSelectCustomer={(id) => setCustomerId(id)}
+            onAddNewClick={() => setIsQuickAddOpen(true)}
+            isLoading={isCustomersLoading}
+          />
 
           {/* Available Stock Indicator */}
           <div className={`p-3 rounded-md border flex items-center justify-between ${
@@ -186,16 +167,16 @@ export const SaleForm: React.FC = () => {
                 Quantity Sold <span className="text-danger-500">*</span>
               </label>
               <div className="flex bg-neutral-100 p-0.5 rounded-md border border-neutral-300">
-                {(['PETI', 'TRAYS', 'EGGS'] as const).map((mode) => (
+                {(['TRAYS', 'PETI', 'EGGS'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setQtyMode(mode)}
-                    className={`px-2.5 py-1 text-caption font-semibold rounded ${
-                      qtyMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-neutral-600'
+                    className={`px-2.5 py-1 text-caption font-semibold rounded transition-colors ${
+                      qtyMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
-                    {mode === 'PETI' ? 'Peti' : mode === 'TRAYS' ? 'Trays' : 'Eggs'}
+                    {mode === 'TRAYS' ? 'Trays' : mode === 'PETI' ? 'Peti' : 'Eggs'}
                   </button>
                 ))}
               </div>
@@ -213,7 +194,7 @@ export const SaleForm: React.FC = () => {
                 required
               />
               <span className="absolute right-3 top-3 text-body text-neutral-500">
-                {qtyMode === 'PETI' ? 'peti' : qtyMode === 'TRAYS' ? 'trays' : 'eggs'}
+                {qtyMode === 'TRAYS' ? 'trays' : qtyMode === 'PETI' ? 'peti' : 'eggs'}
               </span>
             </div>
             {qtyMode !== 'EGGS' && (
@@ -222,7 +203,7 @@ export const SaleForm: React.FC = () => {
                   = <strong>{totalEggs.toLocaleString('en-IN')}</strong> total eggs
                 </span>
                 <span className="text-[11px] text-neutral-400 font-medium">
-                  {qtyMode === 'PETI' ? `(${petiSize} eggs / peti)` : `(${TRAY_SIZE} eggs / tray)`}
+                  {qtyMode === 'TRAYS' ? `(${TRAY_SIZE} eggs / tray)` : `(${petiSize} eggs / peti)`}
                 </span>
               </div>
             )}
@@ -241,16 +222,16 @@ export const SaleForm: React.FC = () => {
                 Price <span className="text-danger-500">*</span>
               </label>
               <div className="flex bg-neutral-100 p-0.5 rounded-md border border-neutral-300">
-                {(['PER_PETI', 'PER_TRAY', 'PER_EGG'] as const).map((mode) => (
+                {(['PER_TRAY', 'PER_PETI', 'PER_EGG'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setPriceMode(mode)}
-                    className={`px-2 py-1 text-caption font-semibold rounded ${
-                      priceMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-neutral-600'
+                    className={`px-2 py-1 text-caption font-semibold rounded transition-colors ${
+                      priceMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
-                    {mode === 'PER_PETI' ? '/ Peti' : mode === 'PER_TRAY' ? '/ Tray' : '/ Egg'}
+                    {mode === 'PER_TRAY' ? '/ Tray' : mode === 'PER_PETI' ? '/ Peti' : '/ Egg'}
                   </button>
                 ))}
               </div>
