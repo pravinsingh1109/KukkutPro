@@ -20,13 +20,31 @@ export const SaleForm: React.FC = () => {
   const [customerId, setCustomerId] = useState('');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
-  // Quantity input mode: default to 'TRAYS' per user request
-  const [qtyMode, setQtyMode] = useState<'EGGS' | 'TRAYS' | 'PETI'>('TRAYS');
+  // Helper to load last used selling rate from localStorage
+  const getLastPrice = (mode: 'PER_EGG' | 'PER_TRAY' | 'PER_PETI'): string => {
+    const saved = localStorage.getItem(`kukkutpro_last_sale_price_${mode}`);
+    if (saved && parseFloat(saved) > 0) return saved;
+    if (mode === 'PER_TRAY') return '165';
+    if (mode === 'PER_PETI') return '1155';
+    return '5.50';
+  };
+
+  // Quantity input mode: remembers last used unit or defaults to 'TRAYS'
+  const [qtyMode, setQtyMode] = useState<'EGGS' | 'TRAYS' | 'PETI'>(() => {
+    return (localStorage.getItem('kukkutpro_last_sale_qty_mode') as any) || 'TRAYS';
+  });
   const [enteredQty, setEnteredQty] = useState<number | ''>('');
 
-  // Price mode: default to 'PER_TRAY' (e.g. ₹165/tray)
-  const [priceMode, setPriceMode] = useState<'PER_EGG' | 'PER_TRAY' | 'PER_PETI'>('PER_TRAY');
-  const [enteredPrice, setEnteredPrice] = useState<string>('165');
+  // Price mode: remembers last used price unit or defaults to 'PER_TRAY'
+  const [priceMode, setPriceMode] = useState<'PER_EGG' | 'PER_TRAY' | 'PER_PETI'>(() => {
+    return (localStorage.getItem('kukkutpro_last_sale_price_mode') as any) || 'PER_TRAY';
+  });
+
+  // Selling price: initialized from last entered selling price
+  const [enteredPrice, setEnteredPrice] = useState<string>(() => {
+    const initialMode = (localStorage.getItem('kukkutpro_last_sale_price_mode') as any) || 'PER_TRAY';
+    return getLastPrice(initialMode);
+  });
 
   const [amountReceived, setAmountReceived] = useState<string>('0');
   const [notes, setNotes] = useState('');
@@ -38,6 +56,42 @@ export const SaleForm: React.FC = () => {
   const { settings } = useSettings();
 
   const petiSize = settings?.petiSize || PETI_SIZE;
+
+  // Handle switching price mode with smart conversion or saved rate lookup
+  const handlePriceModeChange = (newMode: 'PER_PETI' | 'PER_TRAY' | 'PER_EGG') => {
+    if (newMode === priceMode) return;
+    if (enteredPrice && parseFloat(enteredPrice) > 0) {
+      localStorage.setItem(`kukkutpro_last_sale_price_${priceMode}`, enteredPrice);
+    }
+
+    const savedForNewMode = localStorage.getItem(`kukkutpro_last_sale_price_${newMode}`);
+    if (savedForNewMode) {
+      setEnteredPrice(savedForNewMode);
+    } else {
+      const currentVal = parseFloat(enteredPrice) || 0;
+      if (currentVal > 0) {
+        let pPerEgg = currentVal;
+        if (priceMode === 'PER_PETI') pPerEgg = currentVal / petiSize;
+        else if (priceMode === 'PER_TRAY') pPerEgg = currentVal / TRAY_SIZE;
+
+        if (newMode === 'PER_PETI') setEnteredPrice(Math.round(pPerEgg * petiSize).toString());
+        else if (newMode === 'PER_TRAY') setEnteredPrice(Math.round(pPerEgg * TRAY_SIZE).toString());
+        else setEnteredPrice(pPerEgg.toFixed(2));
+      } else {
+        setEnteredPrice(getLastPrice(newMode));
+      }
+    }
+
+    setPriceMode(newMode);
+    localStorage.setItem('kukkutpro_last_sale_price_mode', newMode);
+  };
+
+  const handlePriceChange = (val: string) => {
+    setEnteredPrice(val);
+    if (val && parseFloat(val) > 0) {
+      localStorage.setItem(`kukkutpro_last_sale_price_${priceMode}`, val);
+    }
+  };
 
   // Convert entered quantity to raw egg count
   const totalEggs = useMemo(() => {
@@ -104,6 +158,13 @@ export const SaleForm: React.FC = () => {
         amountReceived: receivedNum.toFixed(2),
         notes: notes.trim() || undefined,
       });
+
+      // Persist the confirmed sale price and modes for next time
+      if (enteredPrice && parseFloat(enteredPrice) > 0) {
+        localStorage.setItem(`kukkutpro_last_sale_price_${priceMode}`, enteredPrice);
+        localStorage.setItem('kukkutpro_last_sale_price_mode', priceMode);
+        localStorage.setItem('kukkutpro_last_sale_qty_mode', qtyMode);
+      }
 
       navigate('/sales');
     } catch (err: any) {
@@ -226,29 +287,39 @@ export const SaleForm: React.FC = () => {
                   <button
                     key={mode}
                     type="button"
-                    onClick={() => setPriceMode(mode)}
-                    className={`px-2 py-1 text-caption font-semibold rounded transition-colors ${
+                    onClick={() => handlePriceModeChange(mode)}
+                    className={`px-2.5 py-1 text-caption font-semibold rounded transition-colors ${
                       priceMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
-                    {mode === 'PER_PETI' ? '/ Peti' : mode === 'PER_TRAY' ? '/ Tray' : '/ Egg'}
+                    {mode === 'PER_PETI' ? 'Peti' : mode === 'PER_TRAY' ? 'Tray' : 'Egg'}
                   </button>
                 ))}
               </div>
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-3 text-body text-neutral-500">₹</span>
+              <span className="absolute left-3 top-3 text-body text-neutral-500 font-semibold">₹</span>
               <input
                 type="number"
                 step="any"
                 min="0"
                 value={enteredPrice}
-                onChange={(e) => setEnteredPrice(e.target.value)}
+                onChange={(e) => handlePriceChange(e.target.value)}
                 placeholder="0.00"
-                className="w-full h-12 pl-8 pr-3 rounded-md border border-neutral-300 bg-neutral-100 text-body-lg tabular-nums focus:border-brand-500 focus:bg-white outline-none"
+                className="w-full h-12 pl-8 pr-3 rounded-md border border-neutral-300 bg-neutral-100 text-body-lg tabular-nums focus:border-brand-500 focus:bg-white outline-none font-semibold"
                 required
               />
             </div>
+            <p className="text-[11px] text-neutral-400 mt-1 flex items-center justify-between">
+              <span>
+                {priceMode === 'PER_TRAY'
+                  ? 'Rate per tray (30 eggs)'
+                  : priceMode === 'PER_PETI'
+                  ? `Rate per peti (${petiSize} eggs)`
+                  : 'Rate per single egg'}
+              </span>
+              <span className="text-brand-600 font-medium">Auto-remembers rate</span>
+            </p>
           </div>
 
           {/* Summary Box */}
