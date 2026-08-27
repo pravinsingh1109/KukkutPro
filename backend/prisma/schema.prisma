@@ -217,3 +217,21 @@ model Expense {
 
   @@index([farmId, date])
 }
+
+model EggMarketPrice {
+  id           String   @id @default(cuid())
+  date         DateTime @db.Date
+  zone         String   @default("Luknow (CC)")
+  pricePer100  Decimal  @db.Decimal(10, 2)
+  pricePerEgg  Decimal  @db.Decimal(10, 4)
+  pricePerTray Decimal  @db.Decimal(10, 2)
+  pricePerPeti Decimal  @db.Decimal(10, 2)
+  source       String   @default("E2NECC")
+  rawText      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([date, zone])
+  @@index([date])
+  @@index([zone])
+}

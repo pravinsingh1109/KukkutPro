@@ -10,7 +10,8 @@ import { TopAppBar } from '../../components/shared/FAB';
 import { PETI_SIZE, TRAY_SIZE } from '../../lib/constants';
 import { formatCurrency, formatEggBreakdown } from '../../lib/utils';
 import { Customer } from '../../types';
-import { Plus, AlertTriangle, Check } from 'lucide-react';
+import { useMarketPrice } from '../../hooks/useMarketPrice';
+import { Plus, AlertTriangle, Check, RefreshCw } from 'lucide-react';
 
 export const SaleForm: React.FC = () => {
   const navigate = useNavigate();
@@ -54,8 +55,22 @@ export const SaleForm: React.FC = () => {
   const { customers, isLoading: isCustomersLoading } = useCustomers();
   const { data: stockData } = useInventoryStock(date);
   const { settings } = useSettings();
+  const { marketPrice, isSyncing, syncPrices } = useMarketPrice('Luknow (CC)');
 
   const petiSize = settings?.petiSize || PETI_SIZE;
+
+  // Compute live NECC price according to currently active price unit
+  const neccRateForCurrentMode = useMemo(() => {
+    if (!marketPrice) return null;
+    if (priceMode === 'PER_TRAY') return marketPrice.pricePerTray;
+    if (priceMode === 'PER_PETI') return marketPrice.pricePerPeti;
+    return marketPrice.pricePerEgg;
+  }, [marketPrice, priceMode]);
+
+  const handleApplyNeccPrice = () => {
+    if (!neccRateForCurrentMode) return;
+    handlePriceChange(neccRateForCurrentMode.toString());
+  };
 
   // Handle switching price mode with smart conversion or saved rate lookup
   const handlePriceModeChange = (newMode: 'PER_PETI' | 'PER_TRAY' | 'PER_EGG') => {
@@ -297,6 +312,39 @@ export const SaleForm: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Live NECC Mandi Rate Helper */}
+            {marketPrice && (
+              <div className="mb-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/25 rounded-md flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-caption text-amber-900">
+                  <span className="w-2 h-2 rounded-full bg-success-500 inline-block animate-pulse shrink-0" />
+                  <span className="font-semibold">NECC Lucknow:</span>
+                  <span className="font-bold text-amber-950">₹{neccRateForCurrentMode}</span>
+                  <span className="text-[11px] text-amber-700">
+                    ({priceMode === 'PER_TRAY' ? '/ tray' : priceMode === 'PER_PETI' ? '/ peti' : '/ egg'})
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleApplyNeccPrice}
+                    className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded text-[11px] transition-all shadow-2xs"
+                  >
+                    Apply Rate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => syncPrices()}
+                    disabled={isSyncing}
+                    title="Refresh from e2necc.com"
+                    className="p-1 text-amber-800 hover:text-amber-950 disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               <span className="absolute left-3 top-3 text-body text-neutral-500 font-semibold">₹</span>
               <input

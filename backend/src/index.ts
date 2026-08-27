@@ -13,6 +13,7 @@ import cashbookRouter from './routes/cashbook';
 import labourRouter from './routes/labour';
 import expensesRouter from './routes/expenses';
 import dashboardRouter from './routes/dashboard';
+import marketPriceRouter from './routes/marketPrice';
 
 dotenv.config();
 
@@ -75,6 +76,7 @@ app.use('/api/cashbook', cashbookRouter);
 app.use('/api/labour', labourRouter);
 app.use('/api/expenses', expensesRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/market-price', marketPriceRouter);
 
 // Centralized error handling
 app.use(errorHandler);

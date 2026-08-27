@@ -14,11 +14,18 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
-  "keywords": ["poultry", "farm-management", "express", "prisma"],
+  "keywords": [
+    "poultry",
+    "farm-management",
+    "express",
+    "prisma"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.19.1",
+    "axios": "^1.20.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

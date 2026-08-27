@@ -7,12 +7,14 @@ import { CashTodayCard } from './CashTodayCard';
 import { OutstandingCard } from './OutstandingCard';
 import { SkeletonCard } from '../../components/shared/SkeletonCard';
 import { ErrorState } from '../../components/shared/EmptyState';
-import { Plus, Egg, ShoppingCart, IndianRupee, Receipt } from 'lucide-react';
+import { useMarketPrice } from '../../hooks/useMarketPrice';
+import { Plus, Egg, ShoppingCart, IndianRupee, Receipt, RefreshCw, TrendingUp } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useDashboard();
   const { settings, isLoading: isSettingsLoading } = useSettings();
+  const { marketPrice, isSyncing, syncPrices } = useMarketPrice('Luknow (CC)');
 
   // Redirect to setup wizard if farm setup is not complete
   useEffect(() => {
@@ -73,6 +75,44 @@ export const Dashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Live NECC Mandi Rate Card */}
+      {marketPrice && (
+        <div className="px-4 pt-1">
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-md p-3 flex items-center justify-between shadow-2xs">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2 h-2 rounded-full bg-success-500 inline-block animate-pulse" />
+                <span className="text-[11px] uppercase tracking-wider font-bold text-amber-900">
+                  NECC Mandi Rate · {marketPrice.zone}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-3">
+                <span className="text-heading-2 font-bold text-neutral-900 tabular-nums">
+                  ₹{marketPrice.pricePerEgg}
+                  <span className="text-body-sm font-normal text-neutral-500"> / egg</span>
+                </span>
+                <span className="text-body-sm font-semibold text-amber-800 tabular-nums">
+                  ₹{marketPrice.pricePerTray} / tray
+                </span>
+                <span className="text-caption text-neutral-500 tabular-nums">
+                  (₹{marketPrice.pricePer100} / 100)
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => syncPrices()}
+              disabled={isSyncing}
+              title="Sync latest price from e2necc.com"
+              className="p-2 bg-white hover:bg-neutral-50 active:scale-95 border border-amber-200 rounded-md text-amber-800 shadow-2xs transition-all flex items-center justify-center shrink-0 disabled:opacity-50"
+            >
+              <RefreshCw size={15} className={isSyncing ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Dashboard Cards */}
       <div className="p-4 space-y-4">
