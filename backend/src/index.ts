@@ -14,6 +14,7 @@ import labourRouter from './routes/labour';
 import expensesRouter from './routes/expenses';
 import dashboardRouter from './routes/dashboard';
 import marketPriceRouter from './routes/marketPrice';
+import backupRouter from './routes/backup';
 
 dotenv.config();
 
@@ -77,6 +78,7 @@ app.use('/api/labour', labourRouter);
 app.use('/api/expenses', expensesRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/market-price', marketPriceRouter);
+app.use('/api/backup', backupRouter);
 
 // Centralized error handling
 app.use(errorHandler);

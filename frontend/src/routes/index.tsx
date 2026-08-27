@@ -17,6 +17,7 @@ import { LabourDetail } from '../features/labour/LabourDetail';
 import { ExpenseList } from '../features/expenses/ExpenseList';
 import { ExpenseForm } from '../features/expenses/ExpenseForm';
 import { Settings } from '../features/settings/Settings';
+import { BackupCenter } from '../features/backup/BackupCenter';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -38,6 +39,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/expenses" element={<ExpenseList />} />
       <Route path="/expenses/new" element={<ExpenseForm />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/backup" element={<BackupCenter />} />
 
       {/* Fallback */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

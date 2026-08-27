@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../hooks/useSettings';
 import { useDemoStore } from '../../lib/demoStore';
+import { useBackup } from '../../hooks/useBackup';
 import { useQueryClient } from '@tanstack/react-query';
 import { TopAppBar } from '../../components/shared/FAB';
 import { formatCurrency } from '../../lib/utils';
@@ -12,11 +14,15 @@ import {
   RotateCcw,
   ShieldAlert,
   AlertTriangle,
+  Cloud,
+  ChevronRight,
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
+  const navigate = useNavigate();
   const { settings, updateSettings, refetch } = useSettings();
   const { isDemoMode, setDemoMode } = useDemoStore();
+  const { isConnected, googleUser } = useBackup();
   const queryClient = useQueryClient();
 
   const [farmName, setFarmName] = useState(settings?.name || '');
@@ -110,6 +116,45 @@ export const Settings: React.FC = () => {
             {error}
           </div>
         )}
+
+        {/* Google Drive & Cloud Backup Card */}
+        <div className="bg-white rounded-md p-4 shadow-sm border border-neutral-200 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+                <Cloud size={20} />
+              </div>
+              <div className="overflow-hidden">
+                <h3 className="text-heading-3 font-bold text-neutral-900">Google Drive Backup</h3>
+                <span className="text-caption text-neutral-500 block truncate">
+                  {isConnected
+                    ? `Connected: ${googleUser?.email}`
+                    : 'Zero-cost local-first cloud recovery'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/backup')}
+              className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded text-caption font-bold flex items-center gap-1 shadow-2xs transition-all shrink-0 ml-2"
+            >
+              <span>Manage</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
+            <span>Daily 12:00 AM auto-snapshots</span>
+            {isConnected ? (
+              <span className="text-success-600 font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-success-500 inline-block" /> Active
+              </span>
+            ) : (
+              <span className="text-neutral-400 font-medium">Not Connected</span>
+            )}
+          </div>
+        </div>
 
         {/* Demo Mode Management Card */}
         <div className="bg-white rounded-md p-4 shadow-sm border border-amber-200 bg-linear-to-b from-amber-50/40 to-white space-y-3">

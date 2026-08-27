@@ -235,3 +235,18 @@ model EggMarketPrice {
   @@index([date])
   @@index([zone])
 }
+
+model BackupLog {
+  id            String   @id @default(cuid())
+  farmId        String
+  driveFileId   String?
+  fileName      String
+  fileSizeBytes Int      @default(0)
+  type          String   @default("MANUAL") // MANUAL | AUTO
+  status        String   @default("SUCCESS") // SUCCESS | FAILED
+  recordCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([farmId, createdAt])
+}
+
