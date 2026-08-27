@@ -4,32 +4,57 @@ import { useCustomers } from '../../hooks/useCustomers';
 import { TopAppBar, FAB } from '../../components/shared/FAB';
 import { SkeletonRow } from '../../components/shared/SkeletonCard';
 import { EmptyState } from '../../components/shared/EmptyState';
+import { ErrorState } from '../../components/shared/EmptyState';
 import { CustomerQuickAddSheet } from './CustomerQuickAddSheet';
 import { formatCurrency } from '../../lib/utils';
-import { Users, Search, ChevronRight } from 'lucide-react';
+import { Users, Search, ChevronRight, CheckCircle2, X } from 'lucide-react';
 
 export const CustomerList: React.FC = () => {
   const navigate = useNavigate();
   const [filterMode, setFilterMode] = useState<'dues' | 'all'>('dues');
   const [searchTerm, setSearchTerm] = useState('');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
 
-  const { customers, isLoading } = useCustomers({
+  const { customers, isLoading, error, refetch } = useCustomers({
     hasDues: filterMode === 'dues' ? true : undefined,
     search: searchTerm.trim() || undefined,
   });
+
+  const handleCustomerCreated = (newCust: any) => {
+    setFilterMode('all');
+    setSuccessToast(`Customer "${newCust.name}" added successfully!`);
+    setTimeout(() => setSuccessToast(null), 4000);
+    refetch();
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-24 max-w-md mx-auto">
       <TopAppBar title="Customer Ledger" subtitle="Buyer directory & dues tracking" />
 
       <div className="p-4 space-y-3">
+        {successToast && (
+          <div className="p-3 bg-success-100 border border-success-500/30 rounded-md text-body-sm text-success-800 flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={18} className="text-success-600 shrink-0" />
+              <span>{successToast}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSuccessToast(null)}
+              className="text-success-700 hover:text-success-900"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Filter Toggle */}
         <div className="flex bg-neutral-200/70 p-1 rounded-md">
           <button
             type="button"
             onClick={() => setFilterMode('dues')}
-            className={`w-1/2 py-1.5 text-body-sm font-semibold rounded ${
+            className={`w-1/2 py-1.5 text-body-sm font-semibold rounded transition-all ${
               filterMode === 'dues' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600'
             }`}
           >
@@ -38,7 +63,7 @@ export const CustomerList: React.FC = () => {
           <button
             type="button"
             onClick={() => setFilterMode('all')}
-            className={`w-1/2 py-1.5 text-body-sm font-semibold rounded ${
+            className={`w-1/2 py-1.5 text-body-sm font-semibold rounded transition-all ${
               filterMode === 'all' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600'
             }`}
           >
@@ -54,8 +79,17 @@ export const CustomerList: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by name or phone..."
-            className="w-full h-11 pl-9 pr-3 rounded-md border border-neutral-300 bg-white text-body focus:border-brand-500 outline-none"
+            className="w-full h-11 pl-9 pr-8 rounded-md border border-neutral-300 bg-white text-body focus:border-brand-500 outline-none"
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* Customers List */}
@@ -65,13 +99,21 @@ export const CustomerList: React.FC = () => {
               <SkeletonRow />
               <SkeletonRow />
               <SkeletonRow />
-              <SkeletonRow />
             </>
+          ) : error ? (
+            <ErrorState
+              message="Failed to load customer records."
+              onRetry={() => refetch()}
+            />
           ) : customers.length === 0 ? (
             <EmptyState
               icon={Users}
               heading={filterMode === 'dues' ? 'No Pending Dues!' : 'No Customers Yet'}
-              subText={filterMode === 'dues' ? 'All customers are currently paid up.' : 'Add your egg buyers to track sales and credit.'}
+              subText={
+                filterMode === 'dues'
+                  ? 'All customers are currently settled. Switch to "All Customers" to view entire directory.'
+                  : 'Add your egg buyers to track sales, invoices, and credit balance.'
+              }
               ctaLabel="Add Customer"
               onCta={() => setIsQuickAddOpen(true)}
             />
@@ -118,7 +160,7 @@ export const CustomerList: React.FC = () => {
       <CustomerQuickAddSheet
         isOpen={isQuickAddOpen}
         onClose={() => setIsQuickAddOpen(false)}
-        onCustomerCreated={(newCust) => navigate(`/customers/${newCust.id}`)}
+        onCustomerCreated={handleCustomerCreated}
       />
     </div>
   );
