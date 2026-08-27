@@ -217,8 +217,19 @@ export const SaleForm: React.FC = () => {
               </span>
             </div>
             {qtyMode !== 'EGGS' && (
-              <p className="text-caption text-neutral-500 mt-1">
-                = <strong>{totalEggs}</strong> total eggs
+              <div className="flex items-center justify-between text-caption text-neutral-500 mt-1">
+                <span>
+                  = <strong>{totalEggs.toLocaleString('en-IN')}</strong> total eggs
+                </span>
+                <span className="text-[11px] text-neutral-400 font-medium">
+                  {qtyMode === 'PETI' ? `(${petiSize} eggs / peti)` : `(${TRAY_SIZE} eggs / tray)`}
+                </span>
+              </div>
+            )}
+            {isStockInsufficient && totalEggs > 0 && (
+              <p className="text-caption text-danger-500 font-semibold mt-1 flex items-center gap-1">
+                <AlertTriangle size={14} className="shrink-0" />
+                <span>Selected quantity ({totalEggs} eggs) exceeds available stock ({availableEggs} eggs)</span>
               </p>
             )}
           </div>

@@ -7,7 +7,12 @@ const router = Router();
 
 const updateSettingsSchema = z.object({
   name: z.string().min(1, 'Farm name cannot be empty').optional(),
-  petiSize: z.number().int().positive('Peti size must be a positive integer').optional(),
+  petiSize: z
+    .number()
+    .int()
+    .min(30, 'A Peti must contain at least 30 eggs (1 tray)')
+    .max(420, 'A single Peti carton cannot exceed 420 eggs (14 trays). If you intended bird count, this setting is for egg box size.')
+    .optional(),
 });
 
 const setupSchema = z.object({

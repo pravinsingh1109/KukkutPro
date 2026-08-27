@@ -174,20 +174,46 @@ export const Settings: React.FC = () => {
 
           <div>
             <label className="block text-label text-neutral-700 mb-1 font-medium">
-              Eggs per Peti (Unit Standard)
+              Eggs per Peti (Carton Packaging Standard)
             </label>
+
+            {/* Quick Presets */}
+            <div className="flex gap-2 mb-2">
+              {[
+                { label: '210 Eggs (7 Trays · Std)', value: 210 },
+                { label: '180 Eggs (6 Trays)', value: 180 },
+                { label: '240 Eggs (8 Trays)', value: 240 },
+              ].map((preset) => (
+                <button
+                  key={preset.value}
+                  type="button"
+                  onClick={() => setPetiSize(preset.value)}
+                  className={`px-2.5 py-1 text-[11px] font-semibold rounded border transition-colors ${
+                    petiSize === preset.value
+                      ? 'bg-brand-500 text-white border-brand-500 shadow-xs'
+                      : 'bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-200'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
             <div className="relative">
               <input
                 type="number"
-                min="1"
+                min="30"
+                max="420"
                 value={petiSize}
-                onChange={(e) => setPetiSize(parseInt(e.target.value) || 210)}
-                className="w-full h-11 px-3 rounded-md border border-neutral-300 bg-neutral-100 text-body focus:border-brand-500 focus:bg-white outline-none tabular-nums"
+                onChange={(e) => setPetiSize(Math.min(420, Math.max(30, parseInt(e.target.value) || 210)))}
+                className="w-full h-11 px-3 rounded-md border border-neutral-300 bg-neutral-100 text-body focus:border-brand-500 focus:bg-white outline-none tabular-nums font-semibold"
                 required
               />
-              <span className="absolute right-3 top-2.5 text-body text-neutral-500">eggs</span>
+              <span className="absolute right-3 top-2.5 text-body text-neutral-500">eggs / peti</span>
             </div>
-            <p className="text-caption text-neutral-500 mt-1">Default in India is 210 eggs (7 trays of 30 eggs).</p>
+            <p className="text-caption text-neutral-500 mt-1">
+              ⚠️ <em>Note: A "Peti" is the transport carton/box (Standard in India = 210 eggs). This is <strong>not</strong> your total flock/bird count.</em>
+            </p>
           </div>
 
           <button
