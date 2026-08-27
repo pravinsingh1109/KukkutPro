@@ -4,8 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './routes';
 import { BottomNav } from './components/shared/BottomNav';
 
-import { DemoModeBanner } from './components/shared/DemoModeBanner';
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -22,7 +20,6 @@ const AppShell: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col">
-      <DemoModeBanner />
       <div className="flex-1">
         <AppRoutes />
       </div>

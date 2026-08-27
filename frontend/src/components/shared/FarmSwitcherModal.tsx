@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useFarmStore, FarmSummary } from '../../hooks/useFarmStore';
 import {
   Warehouse,
-  Sparkles,
   Plus,
   Check,
   X,
@@ -85,49 +84,40 @@ export const FarmSwitcherModal: React.FC<FarmSwitcherModalProps> = ({ isOpen, on
         <div className="p-4 overflow-y-auto space-y-3 flex-1">
           {/* Farm List */}
           <div className="space-y-2">
-            {farms.map((farm) => {
-              const isActive = activeFarm?.id === farm.id;
+            {farms
+              .filter((f) => !f.isDemo)
+              .map((farm) => {
+                const isActive = activeFarm?.id === farm.id;
 
-              return (
-                <button
-                  key={farm.id}
-                  type="button"
-                  onClick={() => handleSelectFarm(farm)}
-                  className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between ${
-                    isActive
-                      ? 'bg-brand-50/60 border-brand-500/40 ring-1 ring-brand-500/30'
-                      : farm.isDemo
-                      ? 'bg-amber-50/40 border-amber-200 hover:bg-amber-50'
-                      : 'bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                        farm.isDemo
-                          ? 'bg-amber-500 text-white'
-                          : isActive
-                          ? 'bg-brand-500 text-white'
-                          : 'bg-neutral-100 text-neutral-600'
-                      }`}
-                    >
-                      {farm.isDemo ? <Sparkles size={18} /> : <Warehouse size={18} />}
-                    </div>
-
-                    <div className="overflow-hidden">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-body font-bold text-neutral-900 truncate">{farm.name}</p>
-                        {farm.isDemo && (
-                          <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 bg-amber-200 text-amber-900 rounded">
-                            Demo
-                          </span>
-                        )}
+                return (
+                  <button
+                    key={farm.id}
+                    type="button"
+                    onClick={() => handleSelectFarm(farm)}
+                    className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between ${
+                      isActive
+                        ? 'bg-brand-50/60 border-brand-500/40 ring-1 ring-brand-500/30'
+                        : 'bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                          isActive
+                            ? 'bg-brand-500 text-white'
+                            : 'bg-neutral-100 text-neutral-600'
+                        }`}
+                      >
+                        <Warehouse size={18} />
                       </div>
-                      <p className="text-caption text-neutral-500 truncate mt-0.5">
-                        Peti: {farm.petiSize} eggs · {farm.saleCount} sales · {farm.customerCount} customers
-                      </p>
+
+                      <div className="overflow-hidden">
+                        <p className="text-body font-bold text-neutral-900 truncate">{farm.name}</p>
+                        <p className="text-caption text-neutral-500 truncate mt-0.5">
+                          Peti: {farm.petiSize} eggs · {farm.saleCount} sales · {farm.customerCount} customers
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="shrink-0 ml-2">
                     {isActive ? (

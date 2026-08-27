@@ -14,33 +14,6 @@ export class SettingsService {
       if (found) return found;
     }
 
-    if (isDemoRequested) {
-      let demoFarm = await prisma.farm.findFirst({
-        where: { isDemo: true },
-        include: {
-          expenseCategories: { where: { isActive: true } },
-        },
-      });
-
-      if (!demoFarm) {
-        demoFarm = await prisma.farm.create({
-          data: {
-            name: 'KukkutPro Demo Farm (Ramesh Poultry)',
-            openingEggStock: 600,
-            openingCash: new Prisma.Decimal(12000.0),
-            petiSize: 210,
-            isSetupComplete: true,
-            isDemo: true,
-          },
-          include: {
-            expenseCategories: { where: { isActive: true } },
-          },
-        });
-      }
-
-      return demoFarm;
-    }
-
     // Default: Real farm (isDemo: false)
     let farm = await prisma.farm.findFirst({
       where: { isDemo: false },

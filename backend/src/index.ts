@@ -61,13 +61,11 @@ app.get('/api/health', (_req, res) => {
 });
 
 import { farmContext } from './middleware/farmContext';
-import { demoRouter } from './routes/demo';
 
-// Register farm context middleware (resolves real farm vs demo farm per request)
+// Register farm context middleware
 app.use(farmContext);
 
 // Register API domain routes
-app.use('/api/demo', demoRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/production', productionRouter);
 app.use('/api/inventory', inventoryRouter);

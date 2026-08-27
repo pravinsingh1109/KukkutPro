@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../hooks/useSettings';
-import { useDemoStore } from '../../lib/demoStore';
 import { useBackup } from '../../hooks/useBackup';
 import { useFarmStore } from '../../hooks/useFarmStore';
 import { FarmSwitcherModal } from '../../components/shared/FarmSwitcherModal';
@@ -12,13 +11,12 @@ import { api } from '../../lib/api';
 import {
   Check,
   Plus,
-  Sparkles,
   RotateCcw,
-  ShieldAlert,
-  AlertTriangle,
   Cloud,
   ChevronRight,
   Warehouse,
+  LogOut,
+  Trash2,
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
@@ -26,8 +24,7 @@ export const Settings: React.FC = () => {
   const [isFarmSwitcherOpen, setIsFarmSwitcherOpen] = useState(false);
   const { farms } = useFarmStore();
   const { settings, updateSettings, refetch } = useSettings();
-  const { isDemoMode, setDemoMode } = useDemoStore();
-  const { isConnected, googleUser } = useBackup();
+  const { isConnected, googleUser, signOut } = useBackup();
   const queryClient = useQueryClient();
 
   const [farmName, setFarmName] = useState(settings?.name || '');
@@ -35,10 +32,6 @@ export const Settings: React.FC = () => {
   const [newCategory, setNewCategory] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
 
   // Sync state if settings resolve
   React.useEffect(() => {
@@ -78,24 +71,12 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const handleToggleDemo = async () => {
-    const nextMode = !isDemoMode;
-    setDemoMode(nextMode);
-    await queryClient.invalidateQueries();
-  };
-
-  const handleResetDemo = async () => {
-    setIsResetting(true);
+  const handleDeleteCategory = async (id: string) => {
     try {
-      await api.post('/demo/reset');
-      await queryClient.invalidateQueries();
-      setIsResetModalOpen(false);
-      setResetSuccess(true);
-      setTimeout(() => setResetSuccess(false), 4000);
+      await api.delete(`/settings/categories/${id}`);
+      refetch();
     } catch (err: any) {
-      alert(err?.error || 'Failed to reset demo data');
-    } finally {
-      setIsResetting(false);
+      alert(err?.error || 'Failed to delete category');
     }
   };
 
@@ -107,12 +88,6 @@ export const Settings: React.FC = () => {
         {saveSuccess && (
           <div className="p-3 bg-success-100 border border-success-500/20 text-success-600 rounded-md text-body-sm font-semibold flex items-center gap-1.5">
             <Check size={18} /> Settings saved successfully
-          </div>
-        )}
-
-        {resetSuccess && (
-          <div className="p-3 bg-amber-100 border border-amber-500/30 text-amber-900 rounded-md text-body-sm font-semibold flex items-center gap-1.5">
-            <Check size={18} className="text-amber-700" /> Demo farm re-seeded with realistic data!
           </div>
         )}
 
@@ -170,14 +145,36 @@ export const Settings: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate('/backup')}
-              className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded text-caption font-bold flex items-center gap-1 shadow-2xs transition-all shrink-0 ml-2"
-            >
-              <span>Manage</span>
-              <ChevronRight size={14} />
-            </button>
+            {isConnected ? (
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/backup')}
+                  className="px-2.5 py-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded text-caption font-bold flex items-center gap-1 shadow-2xs transition-all"
+                >
+                  <span>Manage</span>
+                  <ChevronRight size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="px-2.5 py-1.5 bg-danger-50 hover:bg-danger-100 active:scale-95 text-danger-600 rounded text-caption font-bold flex items-center gap-1 transition-all"
+                  title="Sign out Google Account"
+                >
+                  <LogOut size={14} />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/backup')}
+                className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded text-caption font-bold flex items-center gap-1 shadow-2xs transition-all shrink-0 ml-2"
+              >
+                <span>Connect</span>
+                <ChevronRight size={14} />
+              </button>
+            )}
           </div>
 
           <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
@@ -190,52 +187,6 @@ export const Settings: React.FC = () => {
               <span className="text-neutral-400 font-medium">Not Connected</span>
             )}
           </div>
-        </div>
-
-        {/* Demo Mode Management Card */}
-        <div className="bg-white rounded-md p-4 shadow-sm border border-amber-200 bg-linear-to-b from-amber-50/40 to-white space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center">
-                <Sparkles size={16} />
-              </div>
-              <div>
-                <h3 className="text-heading-3 font-bold text-neutral-900">Demo Farm Mode</h3>
-                <span className="text-caption text-neutral-500 block">
-                  {isDemoMode ? 'Active: Ramesh Poultry Farm' : 'Inactive: Using real farm'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleToggleDemo}
-              className={`px-3 py-1.5 rounded text-caption font-bold shadow-xs transition-all ${
-                isDemoMode
-                  ? 'bg-neutral-800 text-white hover:bg-neutral-900'
-                  : 'bg-amber-600 text-white hover:bg-amber-700'
-              }`}
-            >
-              {isDemoMode ? 'Exit Demo' : 'Turn On Demo'}
-            </button>
-          </div>
-
-          <p className="text-caption text-neutral-600 leading-relaxed">
-            Experience KukkutPro with 7 days of realistic egg collection, buyer ledger dues, labour salaries, and cash books. Demo records are completely isolated from your real farm.
-          </p>
-
-          {isDemoMode && (
-            <div className="pt-2 border-t border-neutral-100 flex justify-between items-center">
-              <span className="text-caption text-neutral-600 font-medium">Re-seed sample records:</span>
-              <button
-                type="button"
-                onClick={() => setIsResetModalOpen(true)}
-                className="px-2.5 py-1 text-caption font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 rounded flex items-center gap-1 transition-colors"
-              >
-                <RotateCcw size={13} /> Reset Demo Data
-              </button>
-            </div>
-          )}
         </div>
 
         {/* General Farm Settings Form */}
@@ -257,78 +208,52 @@ export const Settings: React.FC = () => {
             <label className="block text-label text-neutral-700 mb-1 font-medium">
               Eggs per Peti (Carton Packaging Standard)
             </label>
-
-            {/* Quick Presets */}
-            <div className="flex gap-2 mb-2">
-              {[
-                { label: '210 Eggs (7 Trays · Std)', value: 210 },
-                { label: '180 Eggs (6 Trays)', value: 180 },
-                { label: '240 Eggs (8 Trays)', value: 240 },
-              ].map((preset) => (
+            <p className="text-caption text-neutral-500 mb-2">
+              Standard commercial packaging unit in your mandi (typically 210 eggs / 7 trays).
+            </p>
+            <input
+              type="number"
+              min={30}
+              max={420}
+              value={petiSize}
+              onChange={(e) => setPetiSize(parseInt(e.target.value, 10) || 0)}
+              className="w-full h-11 px-3 rounded-md border border-neutral-300 bg-neutral-100 text-body focus:border-brand-500 focus:bg-white outline-none"
+              required
+            />
+            <div className="flex gap-2 mt-2">
+              {[150, 180, 210, 240, 300].map((preset) => (
                 <button
-                  key={preset.value}
+                  key={preset}
                   type="button"
-                  onClick={() => setPetiSize(preset.value)}
-                  className={`px-2.5 py-1 text-[11px] font-semibold rounded border transition-colors ${
-                    petiSize === preset.value
-                      ? 'bg-brand-500 text-white border-brand-500 shadow-xs'
-                      : 'bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-200'
+                  onClick={() => setPetiSize(preset)}
+                  className={`px-2.5 py-1 text-caption font-semibold rounded border transition-colors ${
+                    petiSize === preset
+                      ? 'bg-brand-500 text-white border-brand-500'
+                      : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
                   }`}
                 >
-                  {preset.label}
+                  {preset} eggs
                 </button>
               ))}
             </div>
-
-            <div className="relative">
-              <input
-                type="number"
-                min="30"
-                max="420"
-                value={petiSize}
-                onChange={(e) => setPetiSize(Math.min(420, Math.max(30, parseInt(e.target.value) || 210)))}
-                className="w-full h-11 px-3 rounded-md border border-neutral-300 bg-neutral-100 text-body focus:border-brand-500 focus:bg-white outline-none tabular-nums font-semibold"
-                required
-              />
-              <span className="absolute right-3 top-2.5 text-body text-neutral-500">eggs / peti</span>
-            </div>
-            <p className="text-caption text-neutral-500 mt-1">
-              ⚠️ <em>Note: A "Peti" is the transport carton/box (Standard in India = 210 eggs). This is <strong>not</strong> your total flock/bird count.</em>
-            </p>
           </div>
 
-          <button
-            type="submit"
-            className="w-full h-11 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-semibold rounded-md shadow-sm transition-all flex items-center justify-center gap-1.5 mt-2"
-          >
-            Save Preferences
-          </button>
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="w-full h-11 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold text-body-sm rounded-md shadow-xs transition-all flex items-center justify-center gap-1.5"
+            >
+              <Check size={18} /> Save Settings
+            </button>
+          </div>
         </form>
 
-        {/* Initial Setup Baseline (Read-Only) */}
-        <div className="bg-white rounded-md p-4 shadow-sm border border-neutral-100 space-y-2">
-          <h3 className="text-heading-3 font-bold text-neutral-900">Starting Baselines</h3>
-          <p className="text-caption text-neutral-500">Values recorded during farm setup onboarding.</p>
-
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="p-2.5 bg-neutral-100 rounded-md">
-              <span className="text-caption text-neutral-500 block">Initial Opening Eggs:</span>
-              <span className="text-body font-bold text-neutral-900">
-                {settings?.openingEggStock || 0} eggs
-              </span>
-            </div>
-            <div className="p-2.5 bg-neutral-100 rounded-md">
-              <span className="text-caption text-neutral-500 block">Initial Opening Cash:</span>
-              <span className="text-body font-bold text-neutral-900">
-                {formatCurrency(settings?.openingCash)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Expense Categories Management */}
+        {/* Expense Categories */}
         <div className="bg-white rounded-md p-4 shadow-sm border border-neutral-100 space-y-3">
-          <h3 className="text-heading-3 font-bold text-neutral-900">Expense Categories</h3>
+          <h2 className="text-heading-2 font-bold text-neutral-900 mb-1">Expense Categories</h2>
+          <p className="text-caption text-neutral-500">
+            Categorize operational costs like feed, medicine, and electricity.
+          </p>
 
           <form onSubmit={handleAddCategory} className="flex gap-2">
             <input
@@ -336,86 +261,25 @@ export const Settings: React.FC = () => {
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               placeholder="New category name..."
-              className="flex-1 h-10 px-3 rounded-md border border-neutral-300 bg-neutral-50 text-body-sm focus:border-brand-500 focus:bg-white outline-none"
+              className="flex-1 h-10 px-3 rounded-md border border-neutral-300 text-body-sm focus:border-brand-500 outline-none"
             />
             <button
               type="submit"
-              className="px-3 h-10 bg-brand-500 text-white rounded-md text-caption font-semibold flex items-center gap-1 shrink-0"
+              className="h-10 px-4 bg-neutral-900 text-white rounded-md text-caption font-bold hover:bg-neutral-800 flex items-center gap-1"
             >
               <Plus size={16} /> Add
             </button>
           </form>
 
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {settings?.expenseCategories?.map((cat) => (
-              <span
-                key={cat}
-                className="px-2.5 py-1 bg-neutral-100 text-neutral-700 rounded-md text-caption font-medium border border-neutral-200"
-              >
-                {cat}
-              </span>
+          <div className="divide-y divide-neutral-100 pt-1">
+            {settings?.expenseCategories?.map((cat, idx) => (
+              <div key={idx} className="py-2.5 flex items-center justify-between">
+                <span className="text-body-sm text-neutral-800 font-medium">{cat}</span>
+              </div>
             ))}
           </div>
         </div>
       </div>
-
-      {/* Confirmation Modal */}
-      {isResetModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-lg p-5 max-w-sm w-full shadow-xl border border-neutral-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3 text-amber-600 mb-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <ShieldAlert size={22} />
-              </div>
-              <div>
-                <h3 className="text-heading-3 font-bold text-neutral-900">Reset Demo Farm Data?</h3>
-                <span className="text-caption text-neutral-500">Completely isolated reset</span>
-              </div>
-            </div>
-
-            <p className="text-body-sm text-neutral-600 mb-4 leading-relaxed">
-              This will re-seed all sample egg collection records, buyer sales, customer dues,
-              labour payouts, and cash book reconciliations for the demo farm.
-            </p>
-
-            <div className="p-3 bg-neutral-100 rounded-md text-caption text-neutral-700 mb-4 flex items-center gap-2">
-              <AlertTriangle size={16} className="text-amber-600 shrink-0" />
-              <span>
-                <strong>Your real farm data</strong> is strictly isolated and will <strong>not</strong> be affected.
-              </span>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={isResetting}
-                onClick={() => setIsResetModalOpen(false)}
-                className="w-1/2 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold rounded-md text-body-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isResetting}
-                onClick={handleResetDemo}
-                className="w-1/2 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-semibold rounded-md text-body-sm transition-all shadow-sm flex items-center justify-center gap-1.5"
-              >
-                {isResetting ? (
-                  <>
-                    <RotateCcw size={14} className="animate-spin" />
-                    <span>Resetting...</span>
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw size={14} />
-                    <span>Yes, Reset</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Farm Switcher / Add Farm Modal */}
       <FarmSwitcherModal
@@ -425,4 +289,3 @@ export const Settings: React.FC = () => {
     </div>
   );
 };
-

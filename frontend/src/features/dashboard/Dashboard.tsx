@@ -20,15 +20,17 @@ import {
   TrendingUp,
   Cloud,
   ChevronDown,
+  LogOut,
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [isFarmSwitcherOpen, setIsFarmSwitcherOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { data, isLoading, error, refetch } = useDashboard();
   const { settings, isLoading: isSettingsLoading } = useSettings();
   const { marketPrice, isSyncing, syncPrices } = useMarketPrice('Luknow (CC)');
-  const { isConnected, googleUser } = useBackup();
+  const { isConnected, googleUser, signOut } = useBackup();
 
   // Redirect to setup wizard if farm setup is not complete
   useEffect(() => {
@@ -65,28 +67,83 @@ export const Dashboard: React.FC = () => {
 
         {/* Google Account / Sign-In Status */}
         {isConnected && googleUser ? (
-          <button
-            type="button"
-            onClick={() => navigate('/backup')}
-            className="flex items-center gap-2 p-1 pl-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 rounded-full transition-all active:scale-95 shadow-2xs"
-            title={`Connected: ${googleUser.email}`}
-          >
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
-              <Cloud size={14} className="text-brand-500" />
-            </div>
-            {googleUser.picture ? (
-              <img
-                src={googleUser.picture}
-                alt={googleUser.name}
-                className="w-6 h-6 rounded-full object-cover border border-neutral-200"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-brand-500 text-white text-[11px] font-bold flex items-center justify-center">
-                {googleUser.name?.charAt(0) || 'G'}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-2 p-1 pl-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 rounded-full transition-all active:scale-95 shadow-2xs cursor-pointer"
+              title={`Account: ${googleUser.email}`}
+            >
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
+                <Cloud size={14} className="text-brand-500" />
               </div>
+              {googleUser.picture ? (
+                <img
+                  src={googleUser.picture}
+                  alt={googleUser.name}
+                  className="w-6 h-6 rounded-full object-cover border border-neutral-200"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-brand-500 text-white text-[11px] font-bold flex items-center justify-center">
+                  {googleUser.name?.charAt(0) || 'G'}
+                </div>
+              )}
+            </button>
+
+            {/* Account Popover Menu */}
+            {isUserMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsUserMenuOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-neutral-200 z-50 p-3 space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="flex items-center gap-2.5 pb-2.5 border-b border-neutral-100">
+                    {googleUser.picture ? (
+                      <img
+                        src={googleUser.picture}
+                        alt={googleUser.name}
+                        className="w-9 h-9 rounded-full object-cover border border-neutral-200 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-brand-500 text-white font-bold flex items-center justify-center shrink-0">
+                        {googleUser.name?.charAt(0) || 'G'}
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <p className="text-body-sm font-bold text-neutral-900 truncate">{googleUser.name}</p>
+                      <p className="text-[11px] text-neutral-500 truncate">{googleUser.email}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigate('/backup');
+                    }}
+                    className="w-full py-2 px-3 text-left rounded-lg text-body-sm font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Cloud size={16} className="text-brand-500" />
+                    <span>Google Drive Backup</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      signOut();
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="w-full py-2 px-3 text-left rounded-lg text-body-sm font-bold text-danger-600 hover:bg-danger-50 flex items-center gap-2 transition-colors border-t border-neutral-100 pt-2 cursor-pointer"
+                  >
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </>
             )}
-          </button>
+          </div>
         ) : (
           <button
             type="button"
