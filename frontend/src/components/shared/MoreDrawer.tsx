@@ -14,6 +14,7 @@ import {
   RotateCcw,
   ShieldAlert,
   AlertTriangle,
+  Cloud,
 } from 'lucide-react';
 
 interface MoreDrawerProps {
@@ -34,6 +35,7 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
     { to: '/cashbook', label: 'Cash Book', desc: 'Daily cash in & out ledger', icon: Banknote },
     { to: '/labour', label: 'Labour Management', desc: 'Worker salaries & advances', icon: Users },
     { to: '/expenses', label: 'Expenses', desc: 'Feed, medicine & farm costs', icon: Receipt },
+    { to: '/backup', label: 'Google Drive Backup', desc: 'Auto-backup & cloud recovery', icon: Cloud },
     { to: '/settings', label: 'Settings', desc: 'Farm profile & preferences', icon: Settings },
   ];
 
