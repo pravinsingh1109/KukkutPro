@@ -15,6 +15,11 @@ api.interceptors.request.use((config) => {
   const isDemo = localStorage.getItem('kukkutpro_demo_mode') === 'true';
   if (isDemo) {
     config.headers['x-demo-mode'] = 'true';
+  } else {
+    const activeFarmId = localStorage.getItem('kukkutpro_active_farm_id');
+    if (activeFarmId) {
+      config.headers['x-farm-id'] = activeFarmId;
+    }
   }
   return config;
 });

@@ -204,6 +204,93 @@ export class SettingsService {
       data: { isActive: false },
     });
   }
+
+  async getAllFarms() {
+    const farms = await prisma.farm.findMany({
+      orderBy: [{ isDemo: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        _count: {
+          select: {
+            productions: true,
+            sales: true,
+            customers: true,
+          },
+        },
+      },
+    });
+
+    return farms.map((f) => ({
+      id: f.id,
+      name: f.name,
+      petiSize: f.petiSize,
+      openingEggStock: f.openingEggStock,
+      openingCash: f.openingCash.toFixed(2),
+      isSetupComplete: f.isSetupComplete,
+      isDemo: f.isDemo,
+      createdAt: f.createdAt,
+      productionCount: f._count.productions,
+      saleCount: f._count.sales,
+      customerCount: f._count.customers,
+    }));
+  }
+
+  async createFarm(data: {
+    name: string;
+    petiSize?: number;
+    openingEggStock?: number;
+    openingCash?: string | number;
+  }) {
+    const trimmed = data.name?.trim();
+    if (!trimmed) {
+      throw new AppError('Farm name cannot be empty', 400, 'VALIDATION_ERROR', 'name');
+    }
+
+    const petiSize = data.petiSize || 210;
+    const openingEggStock = data.openingEggStock || 0;
+    const openingCash = new Prisma.Decimal((data.openingCash || '0').toString());
+
+    const defaultCategories = [
+      'Feed (Makaa/Daana)',
+      'Medicine & Vaccines',
+      'Electricity & Light',
+      'Bedding (Bhoosa)',
+      'Transport & Delivery',
+      'Equipment & Maintenance',
+      'Labour Daily Wages',
+      'Miscellaneous',
+    ];
+
+    const farm = await prisma.farm.create({
+      data: {
+        name: trimmed,
+        petiSize,
+        openingEggStock,
+        openingCash,
+        isSetupComplete: true,
+        isDemo: false,
+        expenseCategories: {
+          create: defaultCategories.map((name) => ({
+            name,
+            isSystem: true,
+            isActive: true,
+          })),
+        },
+      },
+      include: {
+        expenseCategories: true,
+      },
+    });
+
+    return {
+      id: farm.id,
+      name: farm.name,
+      petiSize: farm.petiSize,
+      openingEggStock: farm.openingEggStock,
+      openingCash: farm.openingCash.toFixed(2),
+      isSetupComplete: farm.isSetupComplete,
+      isDemo: farm.isDemo,
+    };
+  }
 }
 
 export const settingsService = new SettingsService();

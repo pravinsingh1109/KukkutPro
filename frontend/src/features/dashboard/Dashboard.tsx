@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../hooks/useDashboard';
 import { useSettings } from '../../hooks/useSettings';
@@ -9,10 +9,22 @@ import { SkeletonCard } from '../../components/shared/SkeletonCard';
 import { ErrorState } from '../../components/shared/EmptyState';
 import { useMarketPrice } from '../../hooks/useMarketPrice';
 import { useBackup } from '../../hooks/useBackup';
-import { Plus, Egg, ShoppingCart, IndianRupee, Receipt, RefreshCw, TrendingUp, Cloud } from 'lucide-react';
+import { FarmSwitcherModal } from '../../components/shared/FarmSwitcherModal';
+import {
+  Plus,
+  Egg,
+  ShoppingCart,
+  IndianRupee,
+  Receipt,
+  RefreshCw,
+  TrendingUp,
+  Cloud,
+  ChevronDown,
+} from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [isFarmSwitcherOpen, setIsFarmSwitcherOpen] = useState(false);
   const { data, isLoading, error, refetch } = useDashboard();
   const { settings, isLoading: isSettingsLoading } = useSettings();
   const { marketPrice, isSyncing, syncPrices } = useMarketPrice('Luknow (CC)');
@@ -36,12 +48,20 @@ export const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 pb-24 max-w-md mx-auto">
       {/* Top Header */}
       <header className="bg-white border-b border-neutral-100 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
-        <div>
-          <h1 className="text-heading-2 font-bold text-neutral-900 tracking-tight">
-            {settings?.name || 'KukkutPro'}
-          </h1>
+        <button
+          type="button"
+          onClick={() => setIsFarmSwitcherOpen(true)}
+          className="text-left group flex flex-col items-start cursor-pointer select-none"
+          title="Click to switch or add poultry farm"
+        >
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-heading-2 font-bold text-neutral-900 tracking-tight group-hover:text-brand-600 transition-colors">
+              {settings?.name || 'KukkutPro'}
+            </h1>
+            <ChevronDown size={18} className="text-neutral-400 group-hover:text-brand-500 transition-colors" />
+          </div>
           <p className="text-caption text-neutral-500 font-medium">{todayDisplay}</p>
-        </div>
+        </button>
 
         {/* Google Account / Sign-In Status */}
         {isConnected && googleUser ? (
@@ -236,6 +256,13 @@ export const Dashboard: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Farm Switcher / Add Farm Modal */}
+      <FarmSwitcherModal
+        isOpen={isFarmSwitcherOpen}
+        onClose={() => setIsFarmSwitcherOpen(false)}
+      />
     </div>
   );
 };
+

@@ -79,4 +79,25 @@ router.delete('/categories/:id', async (req, res, next) => {
   }
 });
 
+// GET /api/settings/farms - List all farms
+router.get('/farms', async (_req, res, next) => {
+  try {
+    const farms = await settingsService.getAllFarms();
+    res.json({ data: farms });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/settings/farms - Create a new farm
+router.post('/farms', async (req, res, next) => {
+  try {
+    const farm = await settingsService.createFarm(req.body);
+    res.status(201).json({ data: farm, message: 'Farm created successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
+

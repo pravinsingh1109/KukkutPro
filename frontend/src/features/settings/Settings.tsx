@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../hooks/useSettings';
 import { useDemoStore } from '../../lib/demoStore';
 import { useBackup } from '../../hooks/useBackup';
+import { useFarmStore } from '../../hooks/useFarmStore';
+import { FarmSwitcherModal } from '../../components/shared/FarmSwitcherModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { TopAppBar } from '../../components/shared/FAB';
 import { formatCurrency } from '../../lib/utils';
@@ -16,10 +18,13 @@ import {
   AlertTriangle,
   Cloud,
   ChevronRight,
+  Warehouse,
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
   const navigate = useNavigate();
+  const [isFarmSwitcherOpen, setIsFarmSwitcherOpen] = useState(false);
+  const { farms } = useFarmStore();
   const { settings, updateSettings, refetch } = useSettings();
   const { isDemoMode, setDemoMode } = useDemoStore();
   const { isConnected, googleUser } = useBackup();
@@ -116,6 +121,37 @@ export const Settings: React.FC = () => {
             {error}
           </div>
         )}
+
+        {/* Poultry Farms Management Card */}
+        <div className="bg-white rounded-md p-4 shadow-sm border border-neutral-200 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Warehouse size={20} />
+              </div>
+              <div className="overflow-hidden">
+                <h3 className="text-heading-3 font-bold text-neutral-900">Poultry Farms</h3>
+                <span className="text-caption text-neutral-500 block truncate">
+                  Active: {settings?.name || 'My Poultry Farm'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsFarmSwitcherOpen(true)}
+              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-900 active:scale-95 text-white rounded text-caption font-bold flex items-center gap-1 shadow-2xs transition-all shrink-0 ml-2"
+            >
+              <span>Switch / Add</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
+            <span>Isolated ledgers per farm</span>
+            <span className="text-neutral-700 font-semibold">{farms.length} Farm{farms.length > 1 ? 's' : ''}</span>
+          </div>
+        </div>
 
         {/* Google Drive & Cloud Backup Card */}
         <div className="bg-white rounded-md p-4 shadow-sm border border-neutral-200 space-y-2.5">
@@ -380,6 +416,13 @@ export const Settings: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Farm Switcher / Add Farm Modal */}
+      <FarmSwitcherModal
+        isOpen={isFarmSwitcherOpen}
+        onClose={() => setIsFarmSwitcherOpen(false)}
+      />
     </div>
   );
 };
+
