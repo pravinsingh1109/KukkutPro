@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api';
+import { db, initLocalDatabase } from '../lib/db';
+import { exportDexieBackup, restoreDexieBackup } from '../lib/backupSerializer';
 import { useDemoStore } from '../lib/demoStore';
 import {
   GoogleUserProfile,
@@ -36,7 +37,7 @@ export function useBackup() {
     localStorage.setItem(AUTO_BACKUP_KEY, enabled ? 'true' : 'false');
   };
 
-  // Sign In with Google
+  // Sign In with Google (pure public Client ID, zero secret)
   const signIn = async () => {
     setIsLoggingIn(true);
     setAuthError(null);
@@ -93,7 +94,7 @@ export function useBackup() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Manual / Auto Backup Mutation
+  // Client-Side Backup Mutation (Dexie -> Google Drive)
   const backupMutation = useMutation({
     mutationFn: async (type: 'MANUAL' | 'AUTO' = 'MANUAL') => {
       if (isDemoMode) {
@@ -104,25 +105,27 @@ export function useBackup() {
         throw new Error('Please sign in with Google to backup data to Google Drive.');
       }
 
-      // 1. Export real farm snapshot from local backend
-      const exportRes = await api.get('/backup/export');
-      const backupEnvelope = exportRes.data.data;
+      // Ensure local database is initialized
+      await initLocalDatabase();
 
-      // 2. Generate descriptive filename
-      const nowStr = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `KukkutPro_Backup_${nowStr}.json`;
+      // 1. Export real farm snapshot directly from IndexedDB (Dexie)
+      const backupEnvelope = await exportDexieBackup(db);
 
-      // 3. Upload to Google Drive
-      const driveFile = await uploadBackupToDrive(googleUser.accessToken, backupEnvelope, fileName);
+      // 2. Upload directly to Google Drive via Drive v3 API
+      const driveFile = await uploadBackupToDrive(googleUser.accessToken, backupEnvelope);
 
-      // 4. Log backup into local DB
-      await api.post('/backup/log', {
+      // 3. Log backup into local Dexie database
+      const realFarm = await db.farms.filter((f) => !f.isDemo).first();
+      await db.backupLogs.add({
+        id: `log_${Date.now()}_${Math.random()}`,
+        farmId: realFarm?.id || 'real_farm_default',
         driveFileId: driveFile.id,
         fileName: driveFile.name,
         fileSizeBytes: driveFile.size,
         type,
         status: 'SUCCESS',
         recordCount: backupEnvelope.meta?.totalRecords || 0,
+        createdAt: new Date().toISOString(),
       });
 
       return driveFile;
@@ -132,7 +135,7 @@ export function useBackup() {
     },
   });
 
-  // Restore Mutation
+  // Client-Side Restore Mutation (Google Drive -> Dexie)
   const restoreMutation = useMutation({
     mutationFn: async (fileId: string) => {
       if (isDemoMode) {
@@ -143,12 +146,12 @@ export function useBackup() {
         throw new Error('Google authentication required to download backup.');
       }
 
-      // 1. Download backup file from Google Drive
+      // 1. Download backup file directly from Google Drive
       const backupPayload = await downloadBackupFromDrive(googleUser.accessToken, fileId);
 
-      // 2. Send to backend restore endpoint
-      const restoreRes = await api.post('/backup/restore', backupPayload);
-      return restoreRes.data;
+      // 2. Restore directly into IndexedDB (Dexie) in a single atomic transaction
+      const result = await restoreDexieBackup(db, backupPayload);
+      return result;
     },
     onSuccess: async () => {
       // Refresh all local app state and queries
@@ -167,30 +170,45 @@ export function useBackup() {
     },
   });
 
-  // Automated 12:00 AM Daily Backup Routine
-  const runAutoBackupCheck = useCallback(async () => {
+  // Target 12:00 AM Daily Backup + On-Resume Missed-Backup Recovery
+  const checkAndRunAutoBackup = useCallback(async () => {
     if (!isAutoBackupEnabled || !googleUser?.accessToken || isDemoMode) return;
 
     const todayStr = new Date().toISOString().split('T')[0];
     const lastAutoBackup = localStorage.getItem(LAST_AUTO_KEY);
 
+    // If today's backup has not run yet
     if (lastAutoBackup !== todayStr) {
       try {
-        console.log('⏰ Executing scheduled daily backup to Google Drive...');
+        console.log('⏰ Running daily backup to Google Drive (target 12:00 AM / on-resume)...');
         await backupMutation.mutateAsync('AUTO');
         localStorage.setItem(LAST_AUTO_KEY, todayStr);
       } catch (err) {
-        console.warn('Daily auto-backup deferred or failed:', err);
+        console.warn('Auto-backup notice (will retry on next resume):', err);
       }
     }
   }, [isAutoBackupEnabled, googleUser, isDemoMode, backupMutation]);
 
   useEffect(() => {
-    // Check on mount and periodically every 60 seconds
-    runAutoBackupCheck();
-    const interval = setInterval(runAutoBackupCheck, 60000);
-    return () => clearInterval(interval);
-  }, [runAutoBackupCheck]);
+    // 1. Check on initial load
+    checkAndRunAutoBackup();
+
+    // 2. Periodic background check every 60 seconds
+    const interval = setInterval(checkAndRunAutoBackup, 60000);
+
+    // 3. On-Resume Catch-Up: When user unlocks phone or switches back to app tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndRunAutoBackup();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [checkAndRunAutoBackup]);
 
   return {
     googleUser,

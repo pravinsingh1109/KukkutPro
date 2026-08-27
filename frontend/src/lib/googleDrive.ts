@@ -7,6 +7,7 @@ export interface DriveBackupFile {
 }
 
 const FOLDER_NAME = 'KukkutPro Backups';
+const MAX_DAILY_BACKUPS = 7;
 
 /**
  * Finds or creates the dedicated "KukkutPro Backups" folder in the user's Google Drive.
@@ -51,23 +52,25 @@ export async function getOrCreateBackupFolder(accessToken: string): Promise<stri
 }
 
 /**
- * Uploads a complete backup JSON envelope to user's Google Drive using multipart upload.
+ * Uploads a complete backup envelope to user's Google Drive with rolling 7-day retention.
  */
 export async function uploadBackupToDrive(
   accessToken: string,
-  backupData: any,
-  fileName: string
+  backupData: any
 ): Promise<DriveBackupFile> {
   const folderId = await getOrCreateBackupFolder(accessToken);
   const boundary = '-------314159265358979323846';
   const delimiter = `\r\n--${boundary}\r\n`;
   const closeDelimiter = `\r\n--${boundary}--`;
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const fileName = `KukkutPro_${todayStr}.kpb`;
+
   const metadata = {
     name: fileName,
     parents: [folderId],
     mimeType: 'application/json',
-    description: `KukkutPro Backup · ${backupData.meta?.totalRecords || 0} records`,
+    description: `KukkutPro Poultry Farm Backup · ${backupData.meta?.totalRecords || 0} records`,
   };
 
   const multipartRequestBody =
@@ -94,6 +97,20 @@ export async function uploadBackupToDrive(
   }
 
   const file = await uploadRes.json();
+
+  // Prune older backups beyond MAX_DAILY_BACKUPS (Rolling 7-day retention)
+  try {
+    const existingBackups = await listBackupsFromDrive(accessToken);
+    if (existingBackups.length > MAX_DAILY_BACKUPS) {
+      const filesToDelete = existingBackups.slice(MAX_DAILY_BACKUPS);
+      for (const oldFile of filesToDelete) {
+        await deleteBackupFromDrive(accessToken, oldFile.id);
+      }
+    }
+  } catch (pruneErr) {
+    console.warn('Backup pruning notice:', pruneErr);
+  }
+
   return {
     id: file.id,
     name: file.name || fileName,

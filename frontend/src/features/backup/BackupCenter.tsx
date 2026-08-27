@@ -71,7 +71,8 @@ export const BackupCenter: React.FC = () => {
     try {
       const result = await restoreBackup(selectedBackupForRestore.id);
       setSelectedBackupForRestore(null);
-      setRestoreSuccessMessage(`Restored successfully! ${result.data?.totalRecords || 0} records reinstated.`);
+      const count = result?.totalRecords ?? (result as any)?.data?.totalRecords ?? 0;
+      setRestoreSuccessMessage(`Restored successfully! ${count} records reinstated.`);
       setTimeout(() => setRestoreSuccessMessage(null), 6000);
     } catch (err: any) {
       console.error(err);
