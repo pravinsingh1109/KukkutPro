@@ -167,7 +167,7 @@ export const SaleForm: React.FC = () => {
                 Quantity Sold <span className="text-danger-500">*</span>
               </label>
               <div className="flex bg-neutral-100 p-0.5 rounded-md border border-neutral-300">
-                {(['TRAYS', 'PETI', 'EGGS'] as const).map((mode) => (
+                {(['PETI', 'TRAYS', 'EGGS'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
@@ -176,7 +176,7 @@ export const SaleForm: React.FC = () => {
                       qtyMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
-                    {mode === 'TRAYS' ? 'Trays' : mode === 'PETI' ? 'Peti' : 'Eggs'}
+                    {mode === 'PETI' ? 'Peti' : mode === 'TRAYS' ? 'Trays' : 'Eggs'}
                   </button>
                 ))}
               </div>
@@ -222,7 +222,7 @@ export const SaleForm: React.FC = () => {
                 Price <span className="text-danger-500">*</span>
               </label>
               <div className="flex bg-neutral-100 p-0.5 rounded-md border border-neutral-300">
-                {(['PER_TRAY', 'PER_PETI', 'PER_EGG'] as const).map((mode) => (
+                {(['PER_PETI', 'PER_TRAY', 'PER_EGG'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
@@ -231,7 +231,7 @@ export const SaleForm: React.FC = () => {
                       priceMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                   >
-                    {mode === 'PER_TRAY' ? '/ Tray' : mode === 'PER_PETI' ? '/ Peti' : '/ Egg'}
+                    {mode === 'PER_PETI' ? '/ Peti' : mode === 'PER_TRAY' ? '/ Tray' : '/ Egg'}
                   </button>
                 ))}
               </div>

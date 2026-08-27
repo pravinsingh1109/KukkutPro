@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import { useCashbook } from '../../hooks/useCashbook';
 import { TopAppBar, FAB } from '../../components/shared/FAB';
 import { ManualCashEntrySheet } from './ManualCashEntrySheet';
+import { CashBookPdfModal } from './CashBookPdfModal';
 import { SkeletonRow } from '../../components/shared/SkeletonCard';
 import { EmptyState } from '../../components/shared/EmptyState';
 import { formatCurrency } from '../../lib/utils';
-import { Wallet, ArrowDownLeft, ArrowUpRight, Plus, Calendar } from 'lucide-react';
+import { Wallet, ArrowDownLeft, ArrowUpRight, Plus, Calendar, FileDown } from 'lucide-react';
 
 export const CashBook: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [isManualSheetOpen, setIsManualSheetOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   const { cashbook, isLoading } = useCashbook(selectedDate, selectedDate);
 
@@ -19,18 +21,30 @@ export const CashBook: React.FC = () => {
       <TopAppBar title="Cash Book" subtitle="Daily cash flow ledger & verification" />
 
       <div className="p-4 space-y-4">
-        {/* Date Selector */}
-        <div className="flex items-center justify-between bg-white p-3 rounded-md border border-neutral-100 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Calendar size={18} className="text-neutral-500" />
-            <span className="text-body font-semibold text-neutral-800">Date:</span>
+        {/* Date Selector and PDF Download Row */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center justify-between bg-white px-3 py-2 rounded-md border border-neutral-100 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Calendar size={18} className="text-neutral-500" />
+              <span className="text-body font-semibold text-neutral-800">Date:</span>
+            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="h-8 px-2 rounded-md border border-neutral-300 bg-neutral-50 text-body-sm focus:border-brand-500 outline-none font-medium"
+            />
           </div>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="h-9 px-2 rounded-md border border-neutral-300 bg-neutral-50 text-body-sm focus:border-brand-500 outline-none font-medium"
-          />
+
+          <button
+            type="button"
+            onClick={() => setIsPdfModalOpen(true)}
+            className="h-12 px-3 bg-white hover:bg-neutral-50 active:scale-95 border border-brand-200 hover:border-brand-400 rounded-md text-brand-600 font-bold text-body-sm flex items-center gap-1.5 shadow-sm transition-all shrink-0"
+            title="Download Monthly / Yearly PDF Statement"
+          >
+            <FileDown size={18} className="text-brand-500" />
+            <span>PDF</span>
+          </button>
         </div>
 
         {/* Daily Cash Summary Card */}
@@ -147,6 +161,11 @@ export const CashBook: React.FC = () => {
       <ManualCashEntrySheet
         isOpen={isManualSheetOpen}
         onClose={() => setIsManualSheetOpen(false)}
+      />
+
+      <CashBookPdfModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
       />
     </div>
   );
